@@ -26,6 +26,16 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:heartbeat, state) do
+    scrape_time = DateTime.to_iso8601(DateTime.utc_now())
+    leaderboard = Aoc.Client.leaderboard("2018")
+    Mongo.insert_one(
+      :mongo, "leaderboard",
+      Map.put(leaderboard, "scrape_time", scrape_time)
+    )
+    ExIRC.Client.msg(
+        state[:client], :privmsg, @channel,
+      "Scraped 2018 leaderboard at " <> scrape_time
+    )
     {:noreply, state}
   end
 
