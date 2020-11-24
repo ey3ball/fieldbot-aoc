@@ -125,3 +125,18 @@ defmodule Aoc.Client do
     result
   end
 end
+
+defmodule Aoc.Stats do
+  def test_stats() do
+    [leaderboard|_] = Enum.to_list(
+      Mongo.find(:mongo, "leaderboard", %{}))
+    Aoc.Stats.members_stats(leaderboard)
+  end
+
+  def members_stats(leaderboard) do
+    leaderboard["members"]
+    |> Map.to_list()
+    |> Enum.map(fn {id, data}
+      -> {id, data["completion_day_level"]} end)
+  end
+end
