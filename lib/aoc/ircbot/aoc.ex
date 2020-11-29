@@ -1,4 +1,6 @@
 defmodule Aoc.IrcBot.Aoc do
+  use GenServer
+
   @channel "#adventofcode-bootcamp-Fieldbox.ai"
   @five_seconds 5000
   @moduledoc """
@@ -64,6 +66,8 @@ defmodule Aoc.IrcBot.Aoc do
     IO.puts "#{inspect state} -"
     IO.puts "#{from} sent a message to #{channel}: #{message}"
     cond do
+      String.starts_with?(message, "!crash") ->
+        1 = 0
       String.starts_with?(message, "!test") ->
         ExIRC.Client.msg(
             state[:client], :privmsg, @channel,

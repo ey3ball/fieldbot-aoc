@@ -1,4 +1,6 @@
 defmodule Aoc.IrcBot.Network do
+  use GenServer
+
   def start_link(client, config) do
     GenServer.start_link(__MODULE__, {client, config}, [])
   end

@@ -1,5 +1,5 @@
 defmodule Aoc.Server do
-  use GenServer
+  use Supervisor
 
   defmodule State do
     defstruct host: "127.0.0.1",
@@ -25,10 +25,19 @@ defmodule Aoc.Server do
   def init(state) do
     {:ok, client} = ExIRC.start_link!()
 
-    {:ok, network} = Aoc.IrcBot.Network.start_link(client, state)
-    {:ok, aoc} = Aoc.IrcBot.Aoc.start_link(client)
+    children = [
+      %{
+        id: Aoc.IrcBot.Network,
+        start: {Aoc.IrcBot.Network, :start_link, [client, state]}
+      },
+      %{
+        id: Aoc.IrcBot.Aoc,
+        start: {Aoc.IrcBot.Aoc, :start_link, [client]}
+      }
+    ]
 
-    {:ok, %{state | :client => client, :handlers => [network, aoc]}}
+    IO.puts IO.ANSI.red() <> "Starting ??"
+    Supervisor.start_link(children, strategy: :one_for_one)
   end
 
     :ok
