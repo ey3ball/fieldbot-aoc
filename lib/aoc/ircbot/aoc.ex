@@ -16,10 +16,6 @@ defmodule Aoc.IrcBot.Aoc do
   def init(client) do
     ExIRC.Client.add_handler(client, self())
     Process.send_after(self(), :started, @five_seconds)
-    {:ok, conn} = Mongo.start_link(
-      name: :mongo,
-      url: "mongodb://aoc:root@localhost:27017/aoc"
-    )
     {:ok, %{:client => client, :init => false}}
   end
 

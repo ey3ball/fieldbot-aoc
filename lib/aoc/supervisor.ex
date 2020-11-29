@@ -15,8 +15,15 @@ defmodule Aoc.Supervisor do
 
   def init(:ok) do
     children = [
+      %{
+        id: :mongo,
+        start: {
+          Mongo, :start_link,
+          [[name: :mongo, url: "mongodb://aoc:root@localhost:27017/aoc"]]
+        }
+      },
       Aoc.Scheduler,
-      Aoc.Server
+      Aoc.Server,
     ]
     Supervisor.init(children, strategy: :one_for_one)
   end
