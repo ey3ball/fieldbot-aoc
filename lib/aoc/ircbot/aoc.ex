@@ -66,21 +66,26 @@ defmodule Aoc.IrcBot.Aoc do
     IO.puts "#{inspect state} -"
     IO.puts "#{from} sent a message to #{channel}: #{message}"
     cond do
-      String.starts_with?(message, "!crash") ->
+      String.starts_with?(message, "!crashtest") ->
         1 = 0
-      String.starts_with?(message, "!test") ->
+      String.starts_with?(message, "!formattest") ->
         ExIRC.Client.msg(
             state[:client], :privmsg, @channel,
-            "fsdf <strong>*fsdfsfd*</strong>"
+            "Test <strong>*fsdfsfd*</strong> <pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
         )
       String.starts_with?(message, "!2018") ->
-        info = Aoc.Rank.Client.leaderboard("2018")
-        for {{_, s}, i} <- Enum.with_index(info["members"])
+        leaderboard = Aoc.Rank.Client.leaderboard("2018")
+        ExIRC.Client.msg(
+            state[:client], :privmsg, @channel,
+            "Leaderboard :"
+        )
+        for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
+            |> Enum.with_index()
             |> Enum.take(5), do: (
           IO.puts "#{inspect s}"
           ExIRC.Client.msg(
               state[:client], :privmsg, @channel,
-              ~s(#{i+1}. <strong>#{s["name"]}</strong>\t\t #{s["stars"]}⭐)
+              Aoc.IrcBot.Formatter.ranked_member(i, s)
           )
         )
       String.starts_with?(message, "!") ->
@@ -106,5 +111,13 @@ defmodule Aoc.IrcBot.Aoc do
   # Catch-all for messages you don't care about
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+end
+
+
+defmodule Aoc.IrcBot.Formatter do
+  def ranked_member(rank, member) do
+    ~s(##{rank}. ⭐#{member["stars"]} ... )
+    <> ~s(<strong>#{member["name"]}</strong>)
   end
 end
