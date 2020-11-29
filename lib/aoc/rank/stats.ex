@@ -29,11 +29,13 @@ defmodule Aoc.Rank.Stats do
   end
 
   def diff_member(m1, m2) do
+    new_stars = m2["stars"] - m1["stars"]
+    new_points = m2["local_score"] - m1["local_score"]
     %{
       :id => m2["id"],
       :name => m2["name"],
-      :new_stars => m2["stars"] - m1["stars"],
-      :new_points => m2["local_score"] - m1["local_score"]
+      :new_stars => new_stars,
+      :new_points => new_points
     }
   end
 
@@ -43,7 +45,7 @@ defmodule Aoc.Rank.Stats do
 
     l2
     |> Map.to_list()
-    |> Enum.map(&(diff_member(elem(&1, 1), l2[elem(&1, 0)])))
+    |> Enum.map(&(diff_member(elem(&1, 1), l1[elem(&1, 0)])))
   end
 
   def members_stats(leaderboard) do
@@ -51,5 +53,16 @@ defmodule Aoc.Rank.Stats do
     |> Map.to_list()
     |> Enum.map(fn {id, data}
       -> {id, data["completion_day_level"]} end)
+  end
+end
+
+defmodule Aoc.Rank.Announces do
+  def find_updates() do
+    {n, n_1} = Aoc.Cache.Client.last_couple()
+    #{n, n_1} = Aoc.Cache.Client.test_last_couple()
+    diff = Aoc.Rank.Stats.diff(n, n_1)
+    Enum.filter(
+      diff, fn(%{:new_points => p}) -> p != 0 end
+    )
   end
 end

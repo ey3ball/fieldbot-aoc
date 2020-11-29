@@ -24,6 +24,19 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:heartbeat, state) do
+    diff = Aoc.Rank.Announces.find_updates()
+
+    cond do
+      diff == "" ->
+        :ok
+      true ->
+        updates = Aoc.IrcBot.Formatter.updates(diff)
+        ExIRC.Client.msg(
+          state[:client], :privmsg, @channel,
+          updates
+        )
+    end
+
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
     ExIRC.Client.msg(
         state[:client], :privmsg, @channel,
@@ -64,6 +77,8 @@ defmodule Aoc.IrcBot.Aoc do
             state[:client], :privmsg, @channel,
             "Test <strong>*fsdfsfd*</strong> <pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
         )
+      String.starts_with?(message, "!updatetest") ->
+        GenServer.cast(Process.whereis(:aocbot), :heartbeat)
       String.starts_with?(message, "!2018") ->
         leaderboard = Aoc.Rank.Client.leaderboard("2018")
         ExIRC.Client.msg(
@@ -110,5 +125,13 @@ defmodule Aoc.IrcBot.Formatter do
   def ranked_member(rank, member) do
     ~s(##{rank}. ⭐#{member["stars"]} ... )
     <> ~s(<strong>#{member["name"]}</strong>)
+  end
+
+  def updates(diff) do
+    updates = diff
+    |> Enum.map(&(
+      "#{&1.name} grabs #{&1.new_stars} ⭐(+#{&1.new_points})"
+    ))
+    "Candies ! " <> Enum.join(updates, ", ")
   end
 end

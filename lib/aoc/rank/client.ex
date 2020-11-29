@@ -18,3 +18,44 @@ defmodule Aoc.Rank.Client do
     result
   end
 end
+
+defmodule Aoc.Cache.Client do
+  def last(year) do
+    cursor = Mongo.find(:mongo, "leaderboard",
+      %{"event" => year},
+      sort: %{scrape_time: -1},
+      limit: 1
+    )
+    [last|_] = cursor |> Enum.to_list()
+    last
+  end
+
+  def last_couple(year \\ "2018") do
+    cursor = Mongo.find(:mongo, "leaderboard",
+      %{"event" => year},
+      sort: %{scrape_time: -1},
+      limit: 2
+    )
+    [n,n_1|_] = cursor |> Enum.to_list()
+    {n, n_1}
+  end
+
+  # Test Document diff : fvallee +1 star +8 points
+  def test_last_couple(year \\ "2018") do
+    cursor = Mongo.find(:mongo, "leaderboard",
+      %{
+        "$and" => [
+          %{"event" => year},
+          %{"scrape_time" =>
+            %{"$lte" => "2020-11-29T22:45:00.461371Z"}
+          }
+        ]
+      },
+      sort: %{scrape_time: -1},
+      limit: 2
+    )
+    [n,n_1|_] = cursor |> Enum.to_list()
+    {n, n_1}
+  end
+
+end
