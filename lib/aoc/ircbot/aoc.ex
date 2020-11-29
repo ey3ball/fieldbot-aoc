@@ -29,7 +29,7 @@ defmodule Aoc.IrcBot.Aoc do
 
   def handle_cast(:heartbeat, state) do
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
-    leaderboard = Aoc.Client.leaderboard("2018")
+    leaderboard = Aoc.Rank.Client.leaderboard("2018")
     Mongo.insert_one(
       :mongo, "leaderboard",
       Map.put(leaderboard, "scrape_time", scrape_time)
@@ -74,7 +74,7 @@ defmodule Aoc.IrcBot.Aoc do
             "fsdf <strong>*fsdfsfd*</strong>"
         )
       String.starts_with?(message, "!2018") ->
-        info = Aoc.Client.leaderboard("2018")
+        info = Aoc.Rank.Client.leaderboard("2018")
         for {{_, s}, i} <- Enum.with_index(info["members"])
             |> Enum.take(5), do: (
           IO.puts "#{inspect s}"
@@ -106,41 +106,5 @@ defmodule Aoc.IrcBot.Aoc do
   # Catch-all for messages you don't care about
   def handle_info(_msg, state) do
     {:noreply, state}
-  end
-end
-
-defmodule Aoc.Client do
-  @aoc_url "https://adventofcode.com/"
-  @leaderboard_path "/leaderboard/private/view/635901.json"
-
-  def leaderboard(year) do
-    cookie = Keyword.get(
-      Application.fetch_env!(:aoc, Aoc.Client),
-      :cookie
-    )
-    url = @aoc_url <> year <> @leaderboard_path
-    IO.puts "#{url}"
-    {:ok, 200, _, ref} = :hackney.request(:get,
-      @aoc_url <> year <> @leaderboard_path,
-      [], <<>>, [{:cookie, cookie}]
-    )
-    {:ok, body} = :hackney.body(ref)
-    {:ok, result} = Jason.decode(body)
-    result
-  end
-end
-
-defmodule Aoc.Stats do
-  def test_stats() do
-    [leaderboard|_] = Enum.to_list(
-      Mongo.find(:mongo, "leaderboard", %{}))
-    Aoc.Stats.members_stats(leaderboard)
-  end
-
-  def members_stats(leaderboard) do
-    leaderboard["members"]
-    |> Map.to_list()
-    |> Enum.map(fn {id, data}
-      -> {id, data["completion_day_level"]} end)
   end
 end
