@@ -11,7 +11,7 @@ defmodule Aoc.Scheduler do
     :ok
   end
 
-  def aocbot_today(today) do
+  def aocbot_today(_) do
     date = Date.utc_today()
     Mongo.insert_one(
       :mongo, "daystats",
@@ -26,7 +26,7 @@ defmodule Aoc.Scheduler do
         "finishers" => []
       }
     )
-    GenServer.cast(Process.whereis(:aocbot), {:today, today})
+    GenServer.cast(Process.whereis(:aocbot), :today)
   end
 
   def aocbot_heartbeat() do
