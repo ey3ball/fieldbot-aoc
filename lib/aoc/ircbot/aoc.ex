@@ -105,6 +105,15 @@ defmodule Aoc.IrcBot.Aoc do
               "Last <strong>24 hours</strong> : " <> updates
             )
         end
+      String.starts_with?(message, "!help") ->
+        ExIRC.Client.msg(
+          state[:client], :privmsg, state[:channel],
+          @bot_prefix <> "I live to serve<BR>"
+          <> @bot_prefix <> "<strong>!help</strong>: read this<BR>"
+          <> @bot_prefix <> "<strong>![year]</strong>: show top5<BR>"
+          <> @bot_prefix <> "<strong>!daily</strong>: 24 hours stats<BR>"
+          <> @bot_prefix <> "<strong>!crashtest</strong>: crash the bot (on purpose)<BR>"
+        )
       String.starts_with?(message, "!") ->
         ExIRC.Client.msg(state[:client], :privmsg, channel,
           @bot_prefix <> " Come again ?"
