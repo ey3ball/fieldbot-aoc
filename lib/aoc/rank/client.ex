@@ -17,6 +17,65 @@ defmodule Aoc.Rank.Client do
     {:ok, result} = Jason.decode(body)
     result
   end
+
+  def today() do
+    today = Date.utc_today()
+    case {today.month, today.day} do
+      {12, day} when day <= 25 ->
+        day
+      {_, _}
+        -> 0
+    end
+  end
+
+  def problem(year, day) do
+    url = @aoc_url <> "#{year}/day/#{day}"
+    {:ok, 200, _, ref} = :hackney.request(:get, url)
+    {:ok, body} = :hackney.body(ref)
+    parsed = Floki.parse_document!(body)
+    parsed
+  end
+
+  def global_scores(year, day) do
+    url = @aoc_url <> "#{year}/leaderboard/day/#{day}"
+    {:ok, 200, _, ref} = :hackney.request(:get, url)
+    {:ok, body} = :hackney.body(ref)
+    parsed = Floki.parse_document!(body)
+    parsed
+  end
+
+  def global_stats(leaderboard) do
+    find_ranked = fn(leaderboard, rank) ->
+      leaderboard
+      # Find Leaderboard HTML entities
+      |> Floki.find(".leaderboard-entry")
+      # Only keep those where position == rank
+      |> Enum.filter(&(
+        String.strip(
+          Floki.find(&1, ".leaderboard-position") |> Floki.text
+        ) == "#{rank})"
+      ))
+      # Extract Time from HTML
+      |> Enum.map(fn (entry) ->
+        entry
+        |> Floki.find(".leaderboard-time")
+        |> Floki.text
+        |> String.slice(-8..-1)
+      end)
+      # Sort so that we have part1, part2 times in order
+      |> Enum.sort()
+    end
+
+    slowest = find_ranked.(leaderboard, 100)
+    fastest = find_ranked.(leaderboard, 1)
+    {slowest, fastest}
+  end
+
+  def problem_title(parsed_problem) do
+    parsed_problem
+    |> Floki.find("article h2")
+    |> Floki.text()
+  end
 end
 
 defmodule Aoc.Cache.Client do
