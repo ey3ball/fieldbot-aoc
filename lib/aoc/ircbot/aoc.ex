@@ -1,6 +1,10 @@
 defmodule Aoc.IrcBot.Aoc do
   use GenServer
 
+  alias Aoc.Cache.Client, as: Cache
+  alias Aoc.IrcBot.Formatter, as: Formatter
+  alias ExIRC.Client, as: Irc
+
   @five_seconds 5000
   @bot_prefix "🤖 "
   @moduledoc """
@@ -14,7 +18,7 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def init(client) do
-    ExIRC.Client.add_handler(client, self())
+    Irc.add_handler(client, self())
     Process.send_after(self(), :started, @five_seconds)
     {:ok, %{
       :client => client,
@@ -37,15 +41,15 @@ defmodule Aoc.IrcBot.Aoc do
       diff == [] ->
         :ok
       true ->
-        updates = Aoc.IrcBot.Formatter.updates(diff)
-        ExIRC.Client.msg(
+        updates = Formatter.updates(diff)
+        Irc.msg(
           state[:client], :privmsg, state[:channel],
           updates
         )
     end
 
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
-    ExIRC.Client.msg(
+    Irc.msg(
         state[:client], :privmsg, state[:spam],
         @bot_prefix <> "Scraped leaderboards at "
         <> scrape_time
@@ -68,7 +72,7 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!crashtest") ->
         1 = 0
       String.starts_with?(message, "!formattest") ->
-        ExIRC.Client.msg(
+        Irc.msg(
             state[:client], :privmsg, state[:channel],
             @bot_prefix <> "Test <strong>*fsdfsfd*</strong>"
             <> "<pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
@@ -76,22 +80,22 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!updatetest") ->
         GenServer.cast(Process.whereis(:aocbot), :heartbeat)
       String.starts_with?(message, "!2018") ->
-        leaderboard = Aoc.Cache.Client.last("2018")
-        ExIRC.Client.msg(
+        leaderboard = Cache.last("2018")
+        Irc.msg(
             state[:client], :privmsg, state[:channel],
-            @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
+            @bot_prefix <> Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!2019") ->
-        leaderboard = Aoc.Cache.Client.last("2019")
-        ExIRC.Client.msg(
+        leaderboard = Cache.last("2019")
+        Irc.msg(
             state[:client], :privmsg, state[:channel],
-            @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
+            @bot_prefix <> Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!2020") ->
-        leaderboard = Aoc.Cache.Client.last("2020")
-        ExIRC.Client.msg(
+        leaderboard = Cache.last("2020")
+        Irc.msg(
             state[:client], :privmsg, state[:channel],
-            @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
+            @bot_prefix <> Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!daily") ->
         diff = Aoc.Rank.Announces.daily_stats("2018")
@@ -99,14 +103,14 @@ defmodule Aoc.IrcBot.Aoc do
           diff == [] ->
             :ok
           true ->
-            updates = Aoc.IrcBot.Formatter.updates(diff)
-            ExIRC.Client.msg(
+            updates = Formatter.updates(diff)
+            Irc.msg(
               state[:client], :privmsg, state[:channel],
               "Last <strong>24 hours</strong> : " <> updates
             )
         end
       String.starts_with?(message, "!help") ->
-        ExIRC.Client.msg(
+        Irc.msg(
           state[:client], :privmsg, state[:channel],
           @bot_prefix <> "I live to serve<BR>"
           <> @bot_prefix <> "<strong>!help</strong>: read this<BR>"
@@ -115,7 +119,7 @@ defmodule Aoc.IrcBot.Aoc do
           <> @bot_prefix <> "<strong>!crashtest</strong>: crash the bot (on purpose)<BR>"
         )
       String.starts_with?(message, "!") ->
-        ExIRC.Client.msg(state[:client], :privmsg, channel,
+        Irc.msg(state[:client], :privmsg, channel,
           @bot_prefix <> " Come again ?"
         )
       true ->
@@ -157,7 +161,7 @@ defmodule Aoc.IrcBot.Formatter do
     members = for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
         |> Enum.with_index()
         |> Enum.take(5), do: (
-          Aoc.IrcBot.Formatter.ranked_member(i, s)
+      ranked_member(i, s)
     )
     message <> Enum.join(members, "<BR>")
   end
