@@ -3,6 +3,7 @@ defmodule Aoc.IrcBot.Aoc do
 
   @channel "#adventofcode-bootcamp-Fieldbox.ai"
   @five_seconds 5000
+  @bot_prefix "🤖 "
   @moduledoc """
   """
   def start! do
@@ -40,23 +41,10 @@ defmodule Aoc.IrcBot.Aoc do
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
     ExIRC.Client.msg(
         state[:client], :privmsg, @channel,
-      "Scraped 2018 leaderboard at " <> scrape_time
+        @bot_prefix <> "Scraped 2018 leaderboard at "
+        <> scrape_time
     )
     {:noreply, state}
-  end
-
-  def command_help(state) do
-    commands = [
-      "!help",
-    ]
-
-    IO.puts "Hello ?"
-    for c <- commands, do:
-      ExIRC.Client.msg(
-          state[:client], :privmsg, @channel,
-          c
-      )
-    :ok
   end
 
   def handle_info(:started, state) do
@@ -65,9 +53,10 @@ defmodule Aoc.IrcBot.Aoc do
 
   def handle_info(
       {:received, message, sender, channel = @channel},
-      state = %{:init => true}) do
+      state = %{:init => true}
+  ) do
     from = sender.nick
-    IO.puts "#{inspect state} -"
+
     IO.puts "#{from} sent a message to #{channel}: #{message}"
     cond do
       String.starts_with?(message, "!crashtest") ->
@@ -75,20 +64,20 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!formattest") ->
         ExIRC.Client.msg(
             state[:client], :privmsg, @channel,
-            "Test <strong>*fsdfsfd*</strong> <pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
+            @bot_prefix <> "Test <strong>*fsdfsfd*</strong>"
+            <> "<pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
         )
       String.starts_with?(message, "!updatetest") ->
         GenServer.cast(Process.whereis(:aocbot), :heartbeat)
       String.starts_with?(message, "!2018") ->
-        leaderboard = Aoc.Rank.Client.leaderboard("2018")
+        leaderboard = Aoc.Cache.Client.last("2018")
         ExIRC.Client.msg(
             state[:client], :privmsg, @channel,
-            "Leaderboard :"
+            @bot_prefix <> "Leaderboard :"
         )
         for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
             |> Enum.with_index()
             |> Enum.take(5), do: (
-          IO.puts "#{inspect s}"
           ExIRC.Client.msg(
               state[:client], :privmsg, @channel,
               Aoc.IrcBot.Formatter.ranked_member(i, s)
@@ -96,13 +85,10 @@ defmodule Aoc.IrcBot.Aoc do
         )
       String.starts_with?(message, "!") ->
         ExIRC.Client.msg(state[:client], :privmsg, channel,
-            "🤖 hello :)"
+          @bot_prefix <> " Come again ?"
         )
       true ->
         :ok
-        #ExIRC.Client.msg(state[:client], :privmsg, channel,
-        #    "Come again ?"
-        #)
     end
 
     {:noreply, state}
@@ -123,7 +109,7 @@ end
 
 defmodule Aoc.IrcBot.Formatter do
   def ranked_member(rank, member) do
-    ~s(##{rank}. ⭐#{member["stars"]} ... )
+    ~s(##{rank}. ⭐ #{member["stars"]} ... )
     <> ~s(<strong>#{member["name"]}</strong>)
   end
 
