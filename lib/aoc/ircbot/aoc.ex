@@ -137,12 +137,15 @@ defmodule Aoc.IrcBot.Aoc do
         diff = Aoc.Rank.Announces.daily_stats("2020")
         cond do
           diff == [] ->
-            :ok
+            Irc.msg(
+              state[:client], :privmsg, state[:channel],
+              @bot_prefix <> "No ⭐found recently :("
+            )
           true ->
             updates = Formatter.updates(diff)
             Irc.msg(
               state[:client], :privmsg, state[:channel],
-              "Last <strong>24 hours</strong> : " <> updates
+              @bot_prefix <> "Last <strong>24 hours</strong> : " <> updates
             )
         end
         :ok
