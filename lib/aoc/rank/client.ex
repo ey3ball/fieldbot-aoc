@@ -20,14 +20,29 @@ defmodule Aoc.Rank.Client do
 end
 
 defmodule Aoc.Cache.Client do
-  def last(year) do
+  def last(year, datetime \\ DateTime.utc_now()) do
+    iso_datetime = DateTime.to_iso8601(datetime)
+    IO.inspect iso_datetime
     cursor = Mongo.find(:mongo, "leaderboard",
-      %{"event" => year},
+      %{
+        "$and" => [
+          %{"event" => year},
+          %{"scrape_time" =>
+            %{"$lte" => iso_datetime}
+          }
+        ]
+      },
       sort: %{scrape_time: -1},
       limit: 1
     )
     [last|_] = cursor |> Enum.to_list()
     last
+  end
+
+  def daily(year) do
+    now = DateTime.utc_now()
+    yesterday = DateTime.add(now, -24*3600)
+    {last(year, now), last(year, yesterday)}
   end
 
   def last_couple(year \\ "2018") do
@@ -57,5 +72,4 @@ defmodule Aoc.Cache.Client do
     [n,n_1|_] = cursor |> Enum.to_list()
     {n, n_1}
   end
-
 end

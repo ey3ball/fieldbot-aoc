@@ -12,6 +12,16 @@ defmodule Aoc.Scheduler do
       :mongo, "leaderboard",
       Map.put(leaderboard, "scrape_time", scrape_time)
     )
+    leaderboard = Aoc.Rank.Client.leaderboard("2019")
+    Mongo.insert_one(
+      :mongo, "leaderboard",
+      Map.put(leaderboard, "scrape_time", scrape_time)
+    )
+    leaderboard = Aoc.Rank.Client.leaderboard("2020")
+    Mongo.insert_one(
+      :mongo, "leaderboard",
+      Map.put(leaderboard, "scrape_time", scrape_time)
+    )
     GenServer.cast(Process.whereis(:aocbot), :heartbeat)
   end
 end

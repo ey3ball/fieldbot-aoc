@@ -47,7 +47,7 @@ defmodule Aoc.IrcBot.Aoc do
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
     ExIRC.Client.msg(
         state[:client], :privmsg, state[:spam],
-        @bot_prefix <> "Scraped 2018 leaderboard at "
+        @bot_prefix <> "Scraped leaderboards at "
         <> scrape_time
     )
     {:noreply, state}
@@ -79,15 +79,19 @@ defmodule Aoc.IrcBot.Aoc do
         leaderboard = Aoc.Cache.Client.last("2018")
         ExIRC.Client.msg(
             state[:client], :privmsg, state[:channel],
-            @bot_prefix <> "Leaderboard :"
+            @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
         )
-        for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
-            |> Enum.with_index()
-            |> Enum.take(5), do: (
-          ExIRC.Client.msg(
-              state[:client], :privmsg, state[:channel],
-              Aoc.IrcBot.Formatter.ranked_member(i, s)
-          )
+      String.starts_with?(message, "!2019") ->
+        leaderboard = Aoc.Cache.Client.last("2019")
+        ExIRC.Client.msg(
+            state[:client], :privmsg, state[:channel],
+            @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
+        )
+      String.starts_with?(message, "!2020") ->
+        leaderboard = Aoc.Cache.Client.last("2020")
+        ExIRC.Client.msg(
+            state[:client], :privmsg, state[:channel],
+            @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!") ->
         ExIRC.Client.msg(state[:client], :privmsg, channel,
@@ -125,5 +129,15 @@ defmodule Aoc.IrcBot.Formatter do
       "#{&1.name} grabs #{&1.new_stars} ⭐ (+#{&1.new_points} pts)"
     ))
     "Candies ! " <> Enum.join(updates, ", ")
+  end
+
+  def leaderboard(leaderboard) do
+    message = "Leaderboard :<BR>"
+    members = for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
+        |> Enum.with_index()
+        |> Enum.take(5), do: (
+          Aoc.IrcBot.Formatter.ranked_member(i, s)
+    )
+    message <> Enum.join(members, "<BR>")
   end
 end
