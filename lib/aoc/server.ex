@@ -2,7 +2,7 @@ defmodule Aoc.Server do
   use Supervisor
 
   defmodule State do
-    defstruct host: "127.0.0.1",
+    defstruct host: "ircd",
               port: 5999,
               nick: "",
               pass: "",
