@@ -36,6 +36,12 @@ defmodule Aoc.Rank.Client do
     parsed
   end
 
+  def problem_title(parsed_problem) do
+    parsed_problem
+    |> Floki.find("article h2")
+    |> Floki.text()
+  end
+
   def global_scores(year, day) do
     url = @aoc_url <> "#{year}/leaderboard/day/#{day}"
     {:ok, 200, _, ref} = :hackney.request(:get, url)
@@ -70,12 +76,6 @@ defmodule Aoc.Rank.Client do
     fastest = find_ranked.(leaderboard, 1)
     {slowest, fastest}
   end
-
-  def problem_title(parsed_problem) do
-    parsed_problem
-    |> Floki.find("article h2")
-    |> Floki.text()
-  end
 end
 
 defmodule Aoc.Cache.Client do
@@ -103,6 +103,18 @@ defmodule Aoc.Cache.Client do
     yesterday = DateTime.add(now, -24*3600)
     {last(year, now), last(year, yesterday)}
   end
+
+  def today(date \\ Date.utc_today()) do
+    Mongo.find_one(:mongo, "daystats",
+      %{
+        "$and" => [
+          %{"day" => date.day},
+          %{"year" => date.year}
+        ]
+      }
+    )
+  end
+
 
   def last_couple(year \\ "2018") do
     cursor = Mongo.find(:mongo, "leaderboard",

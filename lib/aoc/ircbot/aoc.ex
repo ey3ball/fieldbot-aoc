@@ -31,12 +31,31 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:today, state) do
+    today = Date.utc_today()
+
+    problem = Aoc.Rank.Client.problem(today.year, today.day)
+    title = Aoc.Rank.Client.problem_title(problem)
+
+    Irc.msg(
+        state[:client], :privmsg, state[:channel],
+        @bot_prefix <> "The Game is ON ! <BLOCKQUOTE>"
+        <> "🎅  " <> "Today's problem :"
+        <> "<BR>🎅 <STRONG>" <> title <>"</STRONG>"
+        <> "<BR>⏲️  " <> "</BLOCKQUOTE>"
+    )
+
     {:noreply, state}
   end
 
   def handle_cast(:heartbeat, state) do
-    diff = Aoc.Rank.Announces.find_updates()
+    scrape_time = DateTime.to_iso8601(DateTime.utc_now())
+    Irc.msg(
+        state[:client], :privmsg, state[:spam],
+        @bot_prefix <> "Refreshed leaderboard stats !"
+        <> scrape_time
+    )
 
+    diff = Aoc.Rank.Announces.find_updates()
     cond do
       diff == [] ->
         :ok
@@ -48,14 +67,31 @@ defmodule Aoc.IrcBot.Aoc do
         )
     end
 
-    scrape_time = DateTime.to_iso8601(DateTime.utc_now())
-    Irc.msg(
-        state[:client], :privmsg, state[:spam],
-        @bot_prefix <> "Scraped leaderboards at "
-        <> scrape_time
-    )
     {:noreply, state}
   end
+
+  def handle_cast(:global_update, state) do
+    stats = Aoc.Cache.Client.today()
+    fastest = stats["global_stats"]["fastest"]
+    slowest = stats["global_stats"]["slowest"]
+
+    complete = cond do
+      stats["global_stats"]["complete"] == :true ->
+        "<BR>🌍 leaderboard is complete for the day !"
+      :true ->
+        ""
+    end
+
+    Irc.msg(
+        state[:client], :privmsg, state[:spam],
+        @bot_prefix <> "Global leaderboard update !"
+        <> Formatter.reference_times(slowest, fastest)
+        <> complete
+    )
+
+    {:noreply, state}
+  end
+
 
   def handle_info(:started, state) do
     {:noreply, %{state | :init => true}}
@@ -179,9 +215,14 @@ defmodule Aoc.IrcBot.Formatter do
   end
 
   def global({slow, fast}, year, day) do
-    "Global stats for #{year}/#{day}:<BR><BLOCKQUOTE>"
-    <> "🔥 Fastest: #{Enum.join(fast, ", ")}<BR>"
-    <> "❄️ Slowest: #{Enum.join(slow, ", ")}<BR>"
+    "Global stats for #{year}/#{day}:<BR>"
+    <> reference_times(slow, fast)
+  end
+
+  def reference_times(slow, fast) do
+    "<BLOCKQUOTE>"
+    <> "🔥 Fastest: #{Enum.join(fast, " 🌟 ")}<BR>"
+    <> "❄️ Slowest: #{Enum.join(slow, " 🌟 ")}<BR>"
     <> "</BLOCKQUOTE>"
   end
 end
