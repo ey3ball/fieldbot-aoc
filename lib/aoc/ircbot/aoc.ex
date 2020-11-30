@@ -93,6 +93,18 @@ defmodule Aoc.IrcBot.Aoc do
             state[:client], :privmsg, state[:channel],
             @bot_prefix <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
         )
+      String.starts_with?(message, "!daily") ->
+        diff = Aoc.Rank.Announces.daily_stats("2018")
+        cond do
+          diff == [] ->
+            :ok
+          true ->
+            updates = Aoc.IrcBot.Formatter.updates(diff)
+            ExIRC.Client.msg(
+              state[:client], :privmsg, state[:channel],
+              "Last <strong>24 hours</strong> : " <> updates
+            )
+        end
       String.starts_with?(message, "!") ->
         ExIRC.Client.msg(state[:client], :privmsg, channel,
           @bot_prefix <> " Come again ?"

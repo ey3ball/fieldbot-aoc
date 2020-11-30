@@ -65,4 +65,12 @@ defmodule Aoc.Rank.Announces do
       diff, fn(%{:new_points => p}) -> p != 0 end
     )
   end
+
+  def daily_stats(year) do
+    {n, n_1} = Aoc.Cache.Client.daily(year)
+    diff = Aoc.Rank.Stats.diff(n, n_1)
+    Enum.filter(
+      diff, fn(%{:new_points => p}) -> p != 0 end
+    )
+  end
 end
