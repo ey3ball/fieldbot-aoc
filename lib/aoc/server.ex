@@ -4,8 +4,8 @@ defmodule Aoc.Server do
   defmodule State do
     defstruct host: "ircd",
               port: 5999,
-              nick: "",
-              pass: "",
+              nick: Application.fetch_env!(:aoc, Aoc.Server) |> Keyword.get(:username),
+              pass: Application.fetch_env!(:aoc, Aoc.Server) |> Keyword.get(:password),
               user: "fieldbot",
               name: "fieldbot",
               client: nil,
@@ -16,10 +16,7 @@ defmodule Aoc.Server do
   """
   def start_link(_) do
     env = Application.fetch_env!(:aoc, Aoc.Server)
-    GenServer.start_link(__MODULE__, %State{
-      nick: Keyword.get(env, :username),
-      pass: Keyword.get(env, :password)
-    }, [])
+    GenServer.start_link(__MODULE__, %State{}, [])
   end
 
   def init(state) do

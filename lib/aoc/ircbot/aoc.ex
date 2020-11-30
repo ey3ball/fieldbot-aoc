@@ -1,7 +1,6 @@
 defmodule Aoc.IrcBot.Aoc do
   use GenServer
 
-  @channel "#adventofcode-bootcamp-Fieldbox.ai"
   @five_seconds 5000
   @bot_prefix "🤖 "
   @moduledoc """
@@ -17,7 +16,14 @@ defmodule Aoc.IrcBot.Aoc do
   def init(client) do
     ExIRC.Client.add_handler(client, self())
     Process.send_after(self(), :started, @five_seconds)
-    {:ok, %{:client => client, :init => false}}
+    {:ok, %{
+      :client => client,
+      :init => false,
+      :channel => Application.fetch_env!(:aoc, Aoc.IrcBot)
+        |> Keyword.get(:channel),
+      :spam => Application.fetch_env!(:aoc, Aoc.IrcBot)
+        |> Keyword.get(:spam)
+    }}
   end
 
   def handle_cast(:today, state) do
@@ -28,19 +34,19 @@ defmodule Aoc.IrcBot.Aoc do
     diff = Aoc.Rank.Announces.find_updates()
 
     cond do
-      diff == "" ->
+      diff == [] ->
         :ok
       true ->
         updates = Aoc.IrcBot.Formatter.updates(diff)
         ExIRC.Client.msg(
-          state[:client], :privmsg, @channel,
+          state[:client], :privmsg, state[:channel],
           updates
         )
     end
 
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
     ExIRC.Client.msg(
-        state[:client], :privmsg, @channel,
+        state[:client], :privmsg, state[:spam],
         @bot_prefix <> "Scraped 2018 leaderboard at "
         <> scrape_time
     )
@@ -52,8 +58,8 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_info(
-      {:received, message, sender, channel = @channel},
-      state = %{:init => true}
+      {:received, message, sender, channel},
+      state = %{:init => true, :channel => channel}
   ) do
     from = sender.nick
 
@@ -63,7 +69,7 @@ defmodule Aoc.IrcBot.Aoc do
         1 = 0
       String.starts_with?(message, "!formattest") ->
         ExIRC.Client.msg(
-            state[:client], :privmsg, @channel,
+            state[:client], :privmsg, state[:channel],
             @bot_prefix <> "Test <strong>*fsdfsfd*</strong>"
             <> "<pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
         )
@@ -72,14 +78,14 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!2018") ->
         leaderboard = Aoc.Cache.Client.last("2018")
         ExIRC.Client.msg(
-            state[:client], :privmsg, @channel,
+            state[:client], :privmsg, state[:channel],
             @bot_prefix <> "Leaderboard :"
         )
         for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
             |> Enum.with_index()
             |> Enum.take(5), do: (
           ExIRC.Client.msg(
-              state[:client], :privmsg, @channel,
+              state[:client], :privmsg, state[:channel],
               Aoc.IrcBot.Formatter.ranked_member(i, s)
           )
         )
@@ -109,14 +115,14 @@ end
 
 defmodule Aoc.IrcBot.Formatter do
   def ranked_member(rank, member) do
-    ~s(##{rank}. ⭐ #{member["stars"]} ... )
+    ~s(##{rank+1}. ⭐ #{member["stars"]} ... )
     <> ~s(<strong>#{member["name"]}</strong>)
   end
 
   def updates(diff) do
     updates = diff
     |> Enum.map(&(
-      "#{&1.name} grabs #{&1.new_stars} ⭐(+#{&1.new_points})"
+      "#{&1.name} grabs #{&1.new_stars} ⭐ (+#{&1.new_points} pts)"
     ))
     "Candies ! " <> Enum.join(updates, ", ")
   end
