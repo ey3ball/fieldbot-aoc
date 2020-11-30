@@ -98,7 +98,7 @@ defmodule Aoc.IrcBot.Aoc do
             @bot_prefix <> Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!daily") ->
-        diff = Aoc.Rank.Announces.daily_stats("2018")
+        diff = Aoc.Rank.Announces.daily_stats("2020")
         cond do
           diff == [] ->
             :ok
@@ -107,6 +107,18 @@ defmodule Aoc.IrcBot.Aoc do
             Irc.msg(
               state[:client], :privmsg, state[:channel],
               "Last <strong>24 hours</strong> : " <> updates
+            )
+        end
+        :ok
+      String.starts_with?(message, "!global") ->
+        case Regex.run(~r/!global (20[1-2][0-9]) ([0-9][0-9]*)/, message) do
+          nil ->
+            :ok
+          [_, year, day] ->
+            global = Aoc.Rank.Client.global_scores(year, day)
+            stats = Aoc.Rank.Client.global_stats(global)
+            Irc.msg(state[:client], :privmsg, channel,
+              @bot_prefix <> Formatter.global(stats, year, day)
             )
         end
       String.starts_with?(message, "!help") ->
@@ -153,16 +165,23 @@ defmodule Aoc.IrcBot.Formatter do
     |> Enum.map(&(
       "#{&1.name} grabs #{&1.new_stars} ⭐ (+#{&1.new_points} pts)"
     ))
-    "Candies ! " <> Enum.join(updates, ", ")
+    "🚨🍬 " <> Enum.join(updates, ", ")
   end
 
   def leaderboard(leaderboard) do
-    message = "Leaderboard :<BR>"
+    message = "Leaderboard :<BR><BLOCKQUOTE>"
     members = for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
         |> Enum.with_index()
-        |> Enum.take(5), do: (
+        |> Enum.take(10), do: (
       ranked_member(i, s)
     )
-    message <> Enum.join(members, "<BR>")
+    message <> Enum.join(members, "<BR>") <> "</BLOCKQUOTE>"
+  end
+
+  def global({slow, fast}, year, day) do
+    "Global stats for #{year}/#{day}:<BR><BLOCKQUOTE>"
+    <> "🔥 Fastest: #{Enum.join(fast, ", ")}<BR>"
+    <> "❄️ Slowest: #{Enum.join(slow, ", ")}<BR>"
+    <> "</BLOCKQUOTE>"
   end
 end
