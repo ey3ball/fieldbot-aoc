@@ -83,7 +83,7 @@ defmodule Aoc.IrcBot.Aoc do
     end
 
     Irc.msg(
-        state[:client], :privmsg, state[:spam],
+        state[:client], :privmsg, state[:channel],
         @bot_prefix <> "Global leaderboard update !"
         <> Formatter.reference_times(slowest, fastest)
         <> complete

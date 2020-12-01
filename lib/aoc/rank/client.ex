@@ -116,7 +116,7 @@ defmodule Aoc.Cache.Client do
   end
 
 
-  def last_couple(year \\ "2018") do
+  def last_couple(year \\ "2020") do
     cursor = Mongo.find(:mongo, "leaderboard",
       %{"event" => year},
       sort: %{scrape_time: -1},
