@@ -62,7 +62,7 @@ defmodule Aoc.Rank.Announces do
     #{n, n_1} = Aoc.Cache.Client.test_last_couple()
     diff = Aoc.Rank.Stats.diff(n, n_1)
     Enum.filter(
-      diff, fn(%{:new_points => p}) -> p != 0 end
+      diff, fn(%{:new_stars => p}) -> p != 0 end
     )
   end
 
