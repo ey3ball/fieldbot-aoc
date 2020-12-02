@@ -13,6 +13,28 @@ defmodule Aoc.Rank.Stats do
     members
   end
 
+  def by_time(leaderboard, day) do
+    Map.to_list(leaderboard["members"])
+    |> Enum.map(&(elem(&1, 1)))
+    |> Enum.map(
+      fn
+        %{
+          "name" => name,
+          "completion_day_level" => %{
+            ^day => %{
+              "1" => %{ "get_star_ts" => part1_ts },
+              "2" => %{ "get_star_ts" => part2_ts }
+            }
+          }
+        } ->
+          {String.to_integer(part2_ts) - String.to_integer(part1_ts), name} 
+        _ ->
+          :false
+    end)
+    |> Enum.filter(&(&1 != :false))
+    |> Enum.sort
+  end
+
   def by_stars(leaderboard) do
     leaderboard["members"]
     |> Enum.sort(&(
@@ -28,6 +50,9 @@ defmodule Aoc.Rank.Stats do
     |> Enum.map(&(elem(&1, 1)))
   end
 
+  def diff_member(m1, nil) do
+    nil
+  end
   def diff_member(m1, m2) do
     new_stars = m2["stars"] - m1["stars"]
     new_points = m2["local_score"] - m1["local_score"]
@@ -62,7 +87,12 @@ defmodule Aoc.Rank.Announces do
     #{n, n_1} = Aoc.Cache.Client.test_last_couple()
     diff = Aoc.Rank.Stats.diff(n, n_1)
     Enum.filter(
-      diff, fn(%{:new_stars => p}) -> p != 0 end
+      diff, fn
+        %{:new_stars => p} ->
+          p != 0
+        nil ->
+          :false
+      end
     )
   end
 
@@ -70,7 +100,12 @@ defmodule Aoc.Rank.Announces do
     {n, n_1} = Aoc.Cache.Client.daily()
     diff = Aoc.Rank.Stats.diff(n, n_1)
     Enum.filter(
-      diff, fn(%{:new_stars => p}) -> p != 0 end
+      diff, fn
+        %{:new_stars => p} ->
+          p != 0
+        nil ->
+          :false
+      end
     )
   end
 end
