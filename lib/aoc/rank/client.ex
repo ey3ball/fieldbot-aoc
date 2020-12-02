@@ -81,7 +81,6 @@ end
 defmodule Aoc.Cache.Client do
   def last(year, datetime \\ DateTime.utc_now()) do
     iso_datetime = DateTime.to_iso8601(datetime)
-    IO.inspect iso_datetime
     cursor = Mongo.find(:mongo, "leaderboard",
       %{
         "$and" => [
@@ -98,10 +97,12 @@ defmodule Aoc.Cache.Client do
     last
   end
 
-  def daily(year) do
-    now = DateTime.utc_now()
-    yesterday = DateTime.add(now, -24*3600)
-    {last(year, now), last(year, yesterday)}
+  def daily() do
+    now = DateTime.now!("EST")
+    date = DateTime.to_date(now)
+    start = DateTime.new!(date, ~T[00:00:00], "EST")
+    {last("#{now.year}", DateTime.shift_zone!(now, "UTC")),
+     last("#{now.year}", DateTime.shift_zone!(start, "UTC"))}
   end
 
   def today(date \\ Date.utc_today()) do

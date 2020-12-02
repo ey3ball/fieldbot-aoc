@@ -66,8 +66,8 @@ defmodule Aoc.Rank.Announces do
     )
   end
 
-  def daily_stats(year) do
-    {n, n_1} = Aoc.Cache.Client.daily(year)
+  def daily_stats() do
+    {n, n_1} = Aoc.Cache.Client.daily()
     diff = Aoc.Rank.Stats.diff(n, n_1)
     Enum.filter(
       diff, fn(%{:new_stars => p}) -> p != 0 end

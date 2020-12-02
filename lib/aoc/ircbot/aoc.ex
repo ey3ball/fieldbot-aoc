@@ -134,7 +134,7 @@ defmodule Aoc.IrcBot.Aoc do
             @bot_prefix <> Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!daily") ->
-        diff = Aoc.Rank.Announces.daily_stats("2020")
+        diff = Aoc.Rank.Announces.daily_stats()
         cond do
           diff == [] ->
             Irc.msg(
@@ -142,10 +142,10 @@ defmodule Aoc.IrcBot.Aoc do
               @bot_prefix <> "No ⭐found recently :("
             )
           true ->
-            updates = Formatter.updates(diff)
+            updates = Formatter.ranking(diff)
             Irc.msg(
               state[:client], :privmsg, state[:channel],
-              @bot_prefix <> "Last <strong>24 hours</strong> : " <> updates
+              @bot_prefix <> "Today's ranking " <> updates
             )
         end
         :ok
@@ -205,6 +205,17 @@ defmodule Aoc.IrcBot.Formatter do
       "#{&1.name} grabs #{&1.new_stars} ⭐ (+#{&1.new_points} pts)"
     ))
     "🚨🍬 " <> Enum.join(updates, ", ")
+  end
+
+  def ranking(diff) do
+    IO.inspect diff
+    updates = diff
+      |> Enum.sort(&(&1[:new_points] >= &2[:new_points]))
+      |> Enum.with_index()
+      |> Enum.map(fn {user, i} ->
+        "#{i+1}. #{user.new_points} <strong>#{user.name}</strong> (+#{user.new_stars} ⭐)"
+      end)
+    "<BLOCKQUOTE>" <> Enum.join(updates, "<BR>") <> "</BLOCKQUOTE>"
   end
 
   def leaderboard(leaderboard) do
