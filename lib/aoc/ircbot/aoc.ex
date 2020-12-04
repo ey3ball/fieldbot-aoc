@@ -38,7 +38,7 @@ defmodule Aoc.IrcBot.Aoc do
 
     Irc.msg(
         state[:client], :privmsg, state[:channel],
-        @bot_prefix <> "The Game is ON ! <BLOCKQUOTE>"
+        @bot_prefix <> "Wake up early 🐦🐦🐦 ! <BLOCKQUOTE>"
         <> "🎅  " <> "Today's problem :"
         <> "<BR>🎅 <STRONG>" <> title <>"</STRONG>"
         <> "<BR>⏲️  " <> "</BLOCKQUOTE>"
@@ -116,61 +116,21 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!updatetest") ->
         GenServer.cast(Process.whereis(:aocbot), :heartbeat)
       String.starts_with?(message, "!2018") ->
-        leaderboard = Cache.last("2018")
-        Irc.msg(
-            state[:client], :privmsg, state[:channel],
-            @bot_prefix <> Formatter.leaderboard(leaderboard)
-        )
+        Aoc.IrcBot.Commands.top5(state, "2018")
       String.starts_with?(message, "!2019") ->
-        leaderboard = Cache.last("2019")
-        Irc.msg(
-            state[:client], :privmsg, state[:channel],
-            @bot_prefix <> Formatter.leaderboard(leaderboard)
-        )
+        Aoc.IrcBot.Commands.top5(state, "2019")
       String.starts_with?(message, "!2020") ->
-        leaderboard = Cache.last("2020")
-        Irc.msg(
-            state[:client], :privmsg, state[:channel],
-            @bot_prefix <> Formatter.leaderboard(leaderboard)
-        )
+        Aoc.IrcBot.Commands.top5(state, "2020")
       String.starts_with?(message, "!daily") ->
-        {day, diff} = Aoc.Rank.Announces.daily_stats()
-        cond do
-          diff == [] ->
-            Irc.msg(
-              state[:client], :privmsg, state[:channel],
-              @bot_prefix <> "No ⭐found recently :("
-            )
-          true ->
-            updates = Formatter.ranking("#{day}", diff)
-            Irc.msg(
-              state[:client], :privmsg, state[:channel],
-              @bot_prefix <> "Today's rankings" <> updates
-            )
-        end
-        :ok
+        Aoc.IrcBot.Commands.daily(state)
       String.starts_with?(message, "!fast") ->
-        leaderboard = Aoc.Cache.Client.last("2020")
-        today = DateTime.now!("EST").day
-        solve_stats = Aoc.Rank.Stats.by_time(leaderboard, "#{today}")
-        IO.inspect solve_stats
-        Irc.msg(
-          state[:client], :privmsg, state[:channel],
-          @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times)"
-          <> Formatter.part2_times(solve_stats |> Enum.take(10))
-        )
-        :ok
-
+        Aoc.IrcBot.Commands.fast(state)
       String.starts_with?(message, "!global") ->
         case Regex.run(~r/!global (20[1-2][0-9]) ([0-9][0-9]*)/, message) do
           nil ->
             :ok
           [_, year, day] ->
-            global = Aoc.Rank.Client.global_scores(year, day)
-            stats = Aoc.Rank.Client.global_stats(global)
-            Irc.msg(state[:client], :privmsg, channel,
-              @bot_prefix <> Formatter.global(stats, year, day)
-            )
+            Aoc.IrcBot.Commands.global(state, year, day)
         end
       String.starts_with?(message, "!help") ->
         Irc.msg(
@@ -178,8 +138,9 @@ defmodule Aoc.IrcBot.Aoc do
           @bot_prefix <> "I live to serve<BR>"
           <> @bot_prefix <> "<strong>!help</strong>: read this<BR>"
           <> @bot_prefix <> "<strong>![year]</strong>: show top5<BR>"
-          <> @bot_prefix <> "<strong>!daily</strong>: 24 hours stats<BR>"
-          <> @bot_prefix <> "<strong>!crashtest</strong>: crash the bot (on purpose)<BR>"
+          <> @bot_prefix <> "<strong>!daily</strong>: today's stats<BR>"
+          <> @bot_prefix <> "<strong>!fast</strong>: fastest part2 solvers<BR>"
+          <> @bot_prefix <> "<strong>!global <year> <day></strong>: global leaderboard statistics<BR>"
         )
       String.starts_with?(message, "!") ->
         Irc.msg(state[:client], :privmsg, channel,
@@ -201,6 +162,61 @@ defmodule Aoc.IrcBot.Aoc do
   # Catch-all for messages you don't care about
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+end
+
+defmodule Aoc.IrcBot.Commands do
+  alias Aoc.IrcBot.Formatter, as: Formatter
+  alias Aoc.Cache.Client, as: Cache
+  alias ExIRC.Client, as: Irc
+  @bot_prefix "🤖 "
+
+  def daily(state) do
+    {day, diff} = Aoc.Rank.Announces.daily_stats()
+    cond do
+      diff == [] ->
+        Irc.msg(
+          state[:client], :privmsg, state[:channel],
+          @bot_prefix <> "No ⭐found recently :("
+        )
+      true ->
+        updates = Formatter.ranking("#{day}", diff)
+        Irc.msg(
+          state[:client], :privmsg, state[:channel],
+          @bot_prefix <> "Today's rankings" <> updates
+        )
+    end
+    :ok
+  end
+
+  def top5(state, year) do
+    leaderboard = Cache.last(year)
+    Irc.msg(
+        state[:client], :privmsg, state[:channel],
+        @bot_prefix <> Formatter.leaderboard(leaderboard)
+    )
+  end
+
+  def fast(state) do
+    leaderboard = Aoc.Cache.Client.last("2020")
+    today = DateTime.now!("EST").day
+    solve_stats = Aoc.Rank.Stats.by_time(leaderboard, "#{today}")
+    IO.inspect solve_stats
+    Irc.msg(
+      state[:client], :privmsg, state[:channel],
+      @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times)"
+      <> Formatter.part2_times(solve_stats |> Enum.take(10))
+    )
+    :ok
+  end
+
+  def global(state, year, day) do
+    global = Aoc.Rank.Client.global_scores(year, day)
+    stats = Aoc.Rank.Client.global_stats(global)
+    Irc.msg(state[:client], :privmsg, state[:channel],
+      @bot_prefix <> Formatter.global(stats, year, day)
+    )
+    :ok
   end
 end
 
