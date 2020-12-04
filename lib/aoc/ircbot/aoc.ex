@@ -30,6 +30,12 @@ defmodule Aoc.IrcBot.Aoc do
     }}
   end
 
+  def handle_cast(:stats, state) do
+    Aoc.IrcBot.Commands.daily(state)
+    Aoc.IrcBot.Commands.fast(state)
+    {:noreply, state}
+  end
+
   def handle_cast(:today, state) do
     today = Date.utc_today()
 
@@ -205,7 +211,7 @@ defmodule Aoc.IrcBot.Commands do
     Irc.msg(
       state[:client], :privmsg, state[:channel],
       @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times)"
-      <> Formatter.part2_times(solve_stats |> Enum.take(10))
+      <> Formatter.part2_times(solve_stats |> Enum.take(6))
     )
     :ok
   end

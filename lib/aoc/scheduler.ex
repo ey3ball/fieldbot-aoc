@@ -7,6 +7,10 @@ defmodule Aoc.Scheduler do
     aocbot_today(today)
   end
 
+  def aocbot_stats() do
+    GenServer.cast(Process.whereis(:aocbot), :stats)
+  end
+
   def aocbot_today(0) do
     :ok
   end
