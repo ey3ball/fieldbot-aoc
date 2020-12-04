@@ -56,11 +56,29 @@ defmodule Aoc.Rank.Stats do
   def diff_member(m1, m2) do
     new_stars = m2["stars"] - m1["stars"]
     new_points = m2["local_score"] - m1["local_score"]
+    today = DateTime.now!("EST").day
+    today_stars = Map.get(m1["completion_day_level"], "#{today}", %{})
+                  |> Map.to_list() |> Enum.count()
+    new_today_stars = Map.get(m2["completion_day_level"], "#{today}", %{})
+                  |> Map.to_list() |> Enum.count()
+    new_badge = case {today_stars, new_today_stars} do
+      {2,2} -> ""
+      {1,1} -> ""
+      {_,2} -> "🤩 " # part2 completed
+      {_,1} -> "⭐ " # part1 completed
+      _ -> ""
+    end
+    day_stars = m2["completion_day_level"]
+                |> Map.to_list
+                |> Enum.map(fn {i, v} -> {i, v |> Enum.to_list() |> Enum.count()} end)
+                |> Map.new
     %{
       :id => m2["id"],
       :name => m2["name"],
       :new_stars => new_stars,
-      :new_points => new_points
+      :new_points => new_points,
+      :new_badge => new_badge,
+      :day_stars => day_stars,
     }
   end
 
@@ -97,15 +115,15 @@ defmodule Aoc.Rank.Announces do
   end
 
   def daily_stats() do
-    {n, n_1} = Aoc.Cache.Client.daily()
+    {day, n, n_1} = Aoc.Cache.Client.daily()
     diff = Aoc.Rank.Stats.diff(n, n_1)
-    Enum.filter(
+    {day, Enum.filter(
       diff, fn
         %{:new_stars => p} ->
           p != 0
         nil ->
           :false
       end
-    )
+    )}
   end
 end

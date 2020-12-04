@@ -134,7 +134,7 @@ defmodule Aoc.IrcBot.Aoc do
             @bot_prefix <> Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!daily") ->
-        diff = Aoc.Rank.Announces.daily_stats()
+        {day, diff} = Aoc.Rank.Announces.daily_stats()
         cond do
           diff == [] ->
             Irc.msg(
@@ -142,21 +142,21 @@ defmodule Aoc.IrcBot.Aoc do
               @bot_prefix <> "No ⭐found recently :("
             )
           true ->
-            updates = Formatter.ranking(diff)
+            updates = Formatter.ranking("#{day}", diff)
             Irc.msg(
               state[:client], :privmsg, state[:channel],
-              @bot_prefix <> "Today's rankings " <> updates
+              @bot_prefix <> "Today's rankings" <> updates
             )
         end
         :ok
       String.starts_with?(message, "!fast") ->
         leaderboard = Aoc.Cache.Client.last("2020")
-        date = Date.utc_today()
-        solve_stats = Aoc.Rank.Stats.by_time(leaderboard, "#{date.day}")
+        today = DateTime.now!("EST").day
+        solve_stats = Aoc.Rank.Stats.by_time(leaderboard, "#{today}")
         IO.inspect solve_stats
         Irc.msg(
           state[:client], :privmsg, state[:channel],
-          @bot_prefix <> "These guys completed part2 in no time ! ⏱️"
+          @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times)"
           <> Formatter.part2_times(solve_stats |> Enum.take(10))
         )
         :ok
@@ -207,34 +207,42 @@ end
 
 defmodule Aoc.IrcBot.Formatter do
   def ranked_member(rank, member) do
-    ~s(##{rank+1}. ⭐ #{member["stars"]} ... )
-    <> ~s(<strong>#{member["name"]}</strong>)
+    ~s(#{rank} ⭐ #{member["stars"]} ... )
+    <> ~s(<strong>#{member["name"]} </strong>#{member["local_score"]} pts)
   end
 
   def updates(diff) do
     updates = diff
     |> Enum.map(&(
-      "#{&1.name} grabs #{&1.new_stars} ⭐ (+#{&1.new_points} pts)"
+      "#{&1.name} #{&1.new_badge}[+#{&1.new_points} pts] gets #{:rand.uniform(div(&1.new_points, 10) + 1)} 🍬 "
     ))
-    "🚨🍬 " <> Enum.join(updates, ", ")
+    "🚨 " <> Enum.join(updates, ", ")
   end
 
-  def ranking(diff) do
+  def ranking(day, diff) do
     IO.inspect diff
     updates = diff
       |> Enum.sort(&(&1[:new_points] >= &2[:new_points]))
-      |> Enum.with_index()
+      |> beautify_rank()
       |> Enum.map(fn {user, i} ->
-        "#{i+1}. #{user.new_points} <strong>#{user.name}</strong> (+#{user.new_stars} ⭐)"
+        "#{i}<strong>#{user.name}</strong> #{user.new_points} pts #{day_badge(day, user)}"
       end)
     "<BLOCKQUOTE>" <> Enum.join(updates, "<BR>") <> "</BLOCKQUOTE>"
   end
 
+  def day_badge(day, user) do
+    case Map.get(user.day_stars, day, 0) do
+      2 -> "🤩 "
+      1 -> "⭐ "
+      0 -> "🌛"
+    end
+  end
+
   def leaderboard(leaderboard) do
-    message = "Leaderboard :<BR><BLOCKQUOTE>"
+    message = "Naughty or Nice ? Introducing 🎅's favorites<BR><BLOCKQUOTE>"
     members = for {{_, s}, i} <- Aoc.Rank.Stats.by_rank(leaderboard)
-        |> Enum.with_index()
-        |> Enum.take(10), do: (
+        |> beautify_rank
+        |> Enum.take(5), do: (
       ranked_member(i, s)
     )
     message <> Enum.join(members, "<BR>") <> "</BLOCKQUOTE>"
@@ -254,12 +262,24 @@ defmodule Aoc.IrcBot.Formatter do
 
   def part2_times(timed_stats) do
     rankings = timed_stats
-    |> Enum.with_index()
-    |> Enum.map(fn {{time, username}, i} ->
-      "#{i+1}. <STRONG>#{username}</STRONG> in #{Time.to_iso8601(Time.from_seconds_after_midnight(time))}s"
+    |> beautify_rank()
+    |> Enum.map(fn {{time, username}, rank} ->
+      "#{rank} <STRONG>#{username}</STRONG> ⏱️ #{Time.to_iso8601(Time.from_seconds_after_midnight(time))}"
     end)
     |> Enum.join("<BR>")
 
     "<BLOCKQUOTE>" <> rankings <> "</BLOCKQUOTE>"
+  end
+
+  def beautify_rank(enumerable) do
+    enumerable
+    |> Enum.with_index()
+    |> Enum.map(fn
+      {v, 0} -> {v, "🥇"}
+      {v, 1} -> {v, "🥈"}
+      {v, 2} -> {v, "🥉"}
+      {v, i} when i < 9 -> {v, "  #{i+1}  "}
+      {v, i} -> {v, " #{i+1} "}
+    end)
   end
 end

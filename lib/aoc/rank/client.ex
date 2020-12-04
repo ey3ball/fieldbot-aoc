@@ -101,7 +101,8 @@ defmodule Aoc.Cache.Client do
     now = DateTime.now!("EST")
     date = DateTime.to_date(now)
     start = DateTime.new!(date, ~T[00:00:00], "EST")
-    {last("#{now.year}", DateTime.shift_zone!(now, "UTC")),
+    {now.day,
+     last("#{now.year}", DateTime.shift_zone!(now, "UTC")),
      last("#{now.year}", DateTime.shift_zone!(start, "UTC"))}
   end
 
