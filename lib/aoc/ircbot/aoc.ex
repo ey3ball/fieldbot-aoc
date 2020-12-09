@@ -31,8 +31,9 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:stats, state) do
+    date = DateTime.now!("EST")
     Aoc.IrcBot.Commands.daily(state)
-    Aoc.IrcBot.Commands.fast(state)
+    Aoc.IrcBot.Commands.fast(state, "#{date.day}", "#{date.year}")
     {:noreply, state}
   end
 
@@ -130,11 +131,21 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!daily") ->
         Aoc.IrcBot.Commands.daily(state)
       String.starts_with?(message, "!fast") ->
-        Aoc.IrcBot.Commands.fast(state)
+        date = DateTime.now!("EST")
+        {day, year} = case Regex.run(~r/!fast ([0-9]+).?([0-9]{4})?$/, message) do
+          nil ->
+            {"#{date.day}", "#{date.year}"}
+          [_, arg_day] ->
+            {arg_day, "#{date.year}"}
+          [_, arg_day, arg_year] ->
+            {arg_day, "#{date.year}"}
+        end
+        Aoc.IrcBot.Commands.fast(state, day, year)
       String.starts_with?(message, "!global") ->
         case Regex.run(~r/!global (20[1-2][0-9]) ([0-9][0-9]*)/, message) do
           nil ->
-            :ok
+            date = DateTime.now!("EST")
+            Aoc.IrcBot.Commands.global(state, "#{date.year}", "#{date.day}")
           [_, year, day] ->
             Aoc.IrcBot.Commands.global(state, year, day)
         end
@@ -145,8 +156,8 @@ defmodule Aoc.IrcBot.Aoc do
           <> @bot_prefix <> "<strong>!help</strong>: read this<BR>"
           <> @bot_prefix <> "<strong>![year]</strong>: show top5<BR>"
           <> @bot_prefix <> "<strong>!daily</strong>: today's stats<BR>"
-          <> @bot_prefix <> "<strong>!fast</strong>: fastest part2 solvers<BR>"
-          <> @bot_prefix <> "<strong>!global <year> <day></strong>: global leaderboard statistics<BR>"
+          <> @bot_prefix <> "<strong>!fast [day] [year]</strong>: fastest part2 solvers<BR>"
+          <> @bot_prefix <> "<strong>!global [year] [day]</strong>: global leaderboard statistics<BR>"
         )
       String.starts_with?(message, "!") ->
         Irc.msg(state[:client], :privmsg, channel,
@@ -203,15 +214,19 @@ defmodule Aoc.IrcBot.Commands do
     )
   end
 
-  def fast(state) do
-    leaderboard = Aoc.Cache.Client.last("2020")
-    today = DateTime.now!("EST").day
-    solve_stats = Aoc.Rank.Stats.by_time(leaderboard, "#{today}")
-    IO.inspect solve_stats
+  def fast(state, day, year) do
+    #date = Date.new!(
+    #  elem(Integer.parse(year), 0),
+    #  12,
+    #  elem(Integer.parse(day) + 1, 0)
+    #)
+    #time = DateTime.new!(date, ~T[00:00:00.000], "EST") 
+    leaderboard = Aoc.Cache.Client.last(year)
+    solve_stats = Aoc.Rank.Stats.by_time(leaderboard, day)
     Irc.msg(
       state[:client], :privmsg, state[:channel],
-      @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times)"
-      <> Formatter.part2_times(solve_stats |> Enum.take(6))
+      @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times for #{year}-#{day})"
+      <> Formatter.part2_times(solve_stats |> Enum.take(10))
     )
     :ok
   end
@@ -233,11 +248,19 @@ defmodule Aoc.IrcBot.Formatter do
     <> ~s(<strong>#{member["name"]} </strong>#{member["local_score"]} pts)
   end
 
+  def user_update(user_diff) do
+    "#{user_diff.name} #{user_diff.new_badge}"
+    <> case user_diff.p2_time do
+      "" -> ""
+      _ -> "#{user_diff.p2_time} "
+    end
+    <> "[+#{user_diff.new_points} pts]"
+    <> " gets #{:rand.uniform(div(user_diff.new_points, 10) + 1)} 🍬 "
+  end
+
   def updates(diff) do
     updates = diff
-    |> Enum.map(&(
-      "#{&1.name} #{&1.new_badge}[+#{&1.new_points} pts] gets #{:rand.uniform(div(&1.new_points, 10) + 1)} 🍬 "
-    ))
+    |> Enum.map(&(user_update(&1)))
     "🚨 " <> Enum.join(updates, ", ")
   end
 
@@ -247,7 +270,7 @@ defmodule Aoc.IrcBot.Formatter do
       |> Enum.sort(&(&1[:new_points] >= &2[:new_points]))
       |> beautify_rank()
       |> Enum.map(fn {user, i} ->
-        "#{i}<strong>#{user.name}</strong> #{user.new_points} pts #{day_badge(day, user)}"
+        "#{i}<strong>#{user.name}</strong> #{user.new_points} pts #{day_badge(day, user)} #{user.p2_time}"
       end)
     "<BLOCKQUOTE>" <> Enum.join(updates, "<BR>") <> "</BLOCKQUOTE>"
   end
@@ -286,7 +309,7 @@ defmodule Aoc.IrcBot.Formatter do
     rankings = timed_stats
     |> beautify_rank()
     |> Enum.map(fn {{time, username}, rank} ->
-      "#{rank} <STRONG>#{username}</STRONG> ⏱️ #{Time.to_iso8601(Time.from_seconds_after_midnight(time))}"
+      "#{rank} in #{Time.to_iso8601(Time.from_seconds_after_midnight(time))} ⏱️ <STRONG>#{username}</STRONG>"
     end)
     |> Enum.join("<BR>")
 

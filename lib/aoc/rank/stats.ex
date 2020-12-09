@@ -13,12 +13,10 @@ defmodule Aoc.Rank.Stats do
     members
   end
 
-  def by_time(leaderboard, day) do
-    Map.to_list(leaderboard["members"])
-    |> Enum.map(&(elem(&1, 1)))
-    |> Enum.map(
-      fn
-        %{
+  def part2_time(member_data, day) do
+    IO.inspect member_data
+    case member_data do
+      %{
           "name" => name,
           "completion_day_level" => %{
             ^day => %{
@@ -26,12 +24,18 @@ defmodule Aoc.Rank.Stats do
               "2" => %{ "get_star_ts" => part2_ts }
             }
           }
-        } ->
-          {String.to_integer(part2_ts) - String.to_integer(part1_ts), name} 
-        _ ->
-          :false
-    end)
-    |> Enum.filter(&(&1 != :false))
+      } ->
+        {String.to_integer(part2_ts) - String.to_integer(part1_ts), name}
+      _ ->
+        :nil
+    end
+  end
+
+  def by_time(leaderboard, day) do
+    Map.to_list(leaderboard["members"])
+    |> Enum.map(&(elem(&1, 1)))
+    |> Enum.map(&(part2_time(&1, day)))
+    |> Enum.filter(&(&1 != :nil))
     |> Enum.sort
   end
 
@@ -64,7 +68,7 @@ defmodule Aoc.Rank.Stats do
     new_badge = case {today_stars, new_today_stars} do
       {2,2} -> ""
       {1,1} -> ""
-      {_,2} -> "🤩 " # part2 completed
+      {_,2} -> '🤩 ' # part2 completed
       {_,1} -> "⭐ " # part1 completed
       _ -> ""
     end
@@ -79,6 +83,10 @@ defmodule Aoc.Rank.Stats do
       :new_points => new_points,
       :new_badge => new_badge,
       :day_stars => day_stars,
+      :p2_time => case part2_time(m2, "#{today}") do
+        :nil -> ""
+        {time, _} -> "#{Time.to_iso8601(Time.from_seconds_after_midnight(time))}"
+      end
     }
   end
 
