@@ -14,7 +14,6 @@ defmodule Aoc.Rank.Stats do
   end
 
   def part2_time(member_data, day) do
-    IO.inspect member_data
     case member_data do
       %{
           "name" => name,
@@ -54,6 +53,23 @@ defmodule Aoc.Rank.Stats do
     |> Enum.map(&(elem(&1, 1)))
   end
 
+  def new_times(m1, m2) do
+    prev = m1["completion_day_level"]
+    now = m2["completion_day_level"]
+    1..25
+    |> Enum.map(&("#{&1}"))
+    |> Enum.filter(&(Map.get(prev, &1, %{}) != Map.get(now, &1, %{})))
+    |> Enum.map(&(
+      case part2_time(m2, &1) do
+        :nil ->
+          :nil
+        {time, _} ->
+          {&1, "#{Time.to_iso8601(Time.from_seconds_after_midnight(time))}"}
+      end))
+    |> Enum.filter(&(&1 != :nil))
+    |> Map.new()
+  end
+
   def diff_member(m1, nil) do
     nil
   end
@@ -86,7 +102,8 @@ defmodule Aoc.Rank.Stats do
       :p2_time => case part2_time(m2, "#{today}") do
         :nil -> ""
         {time, _} -> "#{Time.to_iso8601(Time.from_seconds_after_midnight(time))}"
-      end
+      end,
+      :new_times => new_times(m1, m2)
     }
   end
 

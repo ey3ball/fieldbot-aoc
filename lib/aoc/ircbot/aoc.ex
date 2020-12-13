@@ -250,10 +250,12 @@ defmodule Aoc.IrcBot.Formatter do
 
   def user_update(user_diff) do
     "#{user_diff.name} #{user_diff.new_badge}"
-    <> case user_diff.p2_time do
-      "" -> ""
-      _ -> "#{user_diff.p2_time} "
-    end
+    <> (
+      user_diff.new_times
+      |> Map.to_list()
+      |> Enum.map(fn {day, time} -> "<STRONG>J#{day}</STRONG> #{time} " end)
+      |> Enum.join(" ")
+    )
     <> "[+#{user_diff.new_points} pts]"
     <> " gets #{:rand.uniform(div(user_diff.new_points, 10) + 1)} 🍬 "
   end
@@ -261,11 +263,10 @@ defmodule Aoc.IrcBot.Formatter do
   def updates(diff) do
     updates = diff
     |> Enum.map(&(user_update(&1)))
-    "🚨 " <> Enum.join(updates, ", ")
+    "🚨 " <> Enum.join(updates, "<BR>🚨 ")
   end
 
   def ranking(day, diff) do
-    IO.inspect diff
     updates = diff
       |> Enum.sort(&(&1[:new_points] >= &2[:new_points]))
       |> beautify_rank()
