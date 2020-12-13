@@ -62,11 +62,10 @@ defmodule Aoc.Rank.Stats do
     |> Enum.map(&(
       case part2_time(m2, &1) do
         :nil ->
-          :nil
+          {&1, ""}
         {time, _} ->
           {&1, "#{Time.to_iso8601(Time.from_seconds_after_midnight(time))}"}
       end))
-    |> Enum.filter(&(&1 != :nil))
     |> Map.new()
   end
 

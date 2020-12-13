@@ -253,7 +253,10 @@ defmodule Aoc.IrcBot.Formatter do
     <> (
       user_diff.new_times
       |> Map.to_list()
-      |> Enum.map(fn {day, time} -> "<STRONG>J#{day}</STRONG> #{time} " end)
+      |> Enum.map(
+        fn {day, ""} -> "<STRONG>J#{day}</STRONG> "
+           {day, time} -> "<STRONG>J#{day}</STRONG> #{time} " end
+      )
       |> Enum.join(" ")
     )
     <> "[+#{user_diff.new_points} pts]"
