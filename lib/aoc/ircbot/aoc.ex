@@ -55,12 +55,12 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:heartbeat, state) do
-    scrape_time = DateTime.to_iso8601(DateTime.utc_now())
-    Irc.msg(
-        state[:client], :privmsg, state[:spam],
-        @bot_prefix <> "Refreshed leaderboard stats !"
-        <> scrape_time
-    )
+    #scrape_time = DateTime.to_iso8601(DateTime.utc_now())
+    #Irc.msg(
+    #    state[:client], :privmsg, state[:spam],
+    #    @bot_prefix <> "Refreshed leaderboard stats !"
+    #    <> scrape_time
+    #)
 
     diff = Aoc.Rank.Announces.find_updates()
     cond do
