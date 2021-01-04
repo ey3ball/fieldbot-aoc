@@ -3,7 +3,7 @@ defmodule Aoc.Scheduler do
   @start_hour 5
 
   def aocbot_today() do
-    today = Aoc.Rank.Client.today()
+    {_, today} = Aoc.Rank.Client.today()
     aocbot_today(today)
   end
 
@@ -35,11 +35,12 @@ defmodule Aoc.Scheduler do
 
   def aocbot_heartbeat() do
     date = Date.utc_today()
+    {year, _} = Aoc.Rank.Client.today()
     scrape_time = DateTime.utc_now()
     iso_time = DateTime.to_iso8601(scrape_time)
 
     # Update leaderboard cache
-    leaderboard = Aoc.Rank.Client.leaderboard("#{date.year}")
+    leaderboard = Aoc.Rank.Client.leaderboard("#{year}")
     Mongo.insert_one(
       :mongo, "leaderboard",
       Map.put(leaderboard, "scrape_time", iso_time)

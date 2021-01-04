@@ -22,9 +22,11 @@ defmodule Aoc.Rank.Client do
     today = Date.utc_today()
     case {today.month, today.day} do
       {12, day} when day <= 25 ->
-        day
+        {today.year, day}
+      {12, _} ->
+        {today.year, 0}
       {_, _}
-        -> 0
+        -> {today.year - 1, 0}
     end
   end
 
