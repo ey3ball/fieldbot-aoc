@@ -19,7 +19,7 @@ look good on slack.
 ## Building
 
 A Dockerfile is provided to build the main app, there's nothing particular
-here, it's a faily standard Elixir app, just run mix.
+here, it's a fairly standard Elixir app, just run mix.
 
 ```
 mix deps.get
@@ -31,10 +31,10 @@ mix compile
 First of all you should head up to `config/config.exs` and setup a few
 variables there. You'll need :
 
-* `Aoc.Client.cookie` contents of a valid cookie grabbed from the AoC website
+* `Aoc.Client.cookie` content of a valid cookie grabbed from the AoC website
 * `Aoc.Server.username` matrix username we'll use to authenticate with matrix-ircd
 * `Aoc.Server.password` matrix password
-* `Aoc.IrcBot.channel` target IRC channel for annonces
+* `Aoc.IrcBot.channel` target IRC channel for announces
 * `Aoc.IrcBot.spam` target IRC channel for monitoring announces
 
 After that you can go ahead and start the stack :
@@ -61,11 +61,12 @@ Once your bot is up you'll have to wait a bit before it populates the internal
 database and can produce usefull stats.
 
 Basically we're fetching fresh data from AoC's servers once every 15 minutes
-and storing that locally in a Mongo database. Most of the annonces are based on
+(as suggested by the AoC API usage rules)
+and storing that locally in a Mongo database. Most of the announces are based on
 diff computed between consecutive fetches, so you may need to wait up to 30
 minutes before the bot can pick up anything usefull.
 
-Some annonces (daily stats mostly) are based on the initial leaderboard state
+Some announces (daily stats mostly) are based on the initial leaderboard state
 at the beginning of the day, so you'll have to wait up to 24 hours before we
 have enough history for these to work properly.
 
