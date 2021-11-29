@@ -129,7 +129,17 @@ defmodule Aoc.IrcBot.Aoc do
       String.starts_with?(message, "!2020") ->
         Aoc.IrcBot.Commands.top5(state, "2020")
       String.starts_with?(message, "!daily") ->
-        Aoc.IrcBot.Commands.daily(state)
+        {_, today} = Aoc.Rank.Client.today()
+        case today do
+          0 ->
+            Irc.msg(
+              state[:client], :privmsg, state[:channel],
+              @bot_prefix <> "No AoC today :( "
+              <> "Come back during advent season 🧦 !"
+            )
+          _ ->
+            Aoc.IrcBot.Commands.daily(state)
+        end
       String.starts_with?(message, "!fast") ->
         date = DateTime.now!("EST")
         {day, year} = case Regex.run(~r/!fast ([0-9]+).?([0-9]{4})?$/, message) do

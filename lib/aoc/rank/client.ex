@@ -108,6 +108,16 @@ defmodule Aoc.Cache.Client do
      last("#{now.year}", DateTime.shift_zone!(start, "UTC"))}
   end
 
+  def daily_old(year, day) do
+    {:ok, date} = Date.new(year, 12, day)
+    {:ok, next_date} = Date.new(year, 12, day + 1)
+    day_start = DateTime.new!(date, ~T[00:00:00], "EST")
+    day_end = DateTime.new!(next_date, ~T[00:00:00], "EST")
+    {day,
+     last("#{year}", DateTime.shift_zone!(day_end, "UTC")),
+     last("#{year}", DateTime.shift_zone!(day_start, "UTC"))}
+  end
+
   def today(date \\ Date.utc_today()) do
     Mongo.find_one(:mongo, "daystats",
       %{
