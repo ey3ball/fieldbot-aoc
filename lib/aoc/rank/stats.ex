@@ -24,7 +24,7 @@ defmodule Aoc.Rank.Stats do
             }
           }
       } ->
-        {String.to_integer(part2_ts) - String.to_integer(part1_ts), name}
+        {String.to_integer("#{part2_ts}") - String.to_integer("#{part1_ts}"), name}
       _ ->
         :nil
     end

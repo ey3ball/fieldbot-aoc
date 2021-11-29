@@ -138,7 +138,7 @@ defmodule Aoc.IrcBot.Aoc do
           [_, arg_day] ->
             {arg_day, "#{date.year}"}
           [_, arg_day, arg_year] ->
-            {arg_day, "#{date.year}"}
+            {arg_day, arg_year}
         end
         Aoc.IrcBot.Commands.fast(state, day, year)
       String.starts_with?(message, "!global") ->
