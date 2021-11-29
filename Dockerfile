@@ -1,4 +1,4 @@
-FROM elixir
+FROM elixir:1.11
 
 RUN useradd -d /app -u 1000 fieldbot
 ADD . /app/
