@@ -132,7 +132,7 @@ defmodule Aoc.Cache.Client do
 
   def last_couple() do
     {current_year, _} = Aoc.Rank.Client.today()
-    last_couple(current_year)
+    last_couple("#{current_year}")
   end
 
   def last_couple(year) do
