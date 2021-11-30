@@ -2,13 +2,22 @@ defmodule Aoc.Scheduler do
   use Quantum, otp_app: :aoc
   @start_hour 5
 
-  def aocbot_today() do
+  def aocbot_stats() do
     {_, today} = Aoc.Rank.Client.today()
     aocbot_today(today)
   end
 
-  def aocbot_stats() do
+  def aocbot_stats(0) do
+    :ok
+  end
+
+  def aocbot_stats(_) do
     GenServer.cast(Process.whereis(:aocbot), :stats)
+  end
+
+  def aocbot_today() do
+    {_, today} = Aoc.Rank.Client.today()
+    aocbot_today(today)
   end
 
   def aocbot_today(0) do
