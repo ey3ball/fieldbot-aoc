@@ -314,8 +314,8 @@ defmodule Aoc.IrcBot.Formatter do
 
   def reference_times(slow, fast) do
     "<BLOCKQUOTE>"
-    <> "🔥 Fastest: #{Enum.join(fast, " 🌟 ")}<BR>"
-    <> "❄️ Slowest: #{Enum.join(slow, " 🌟 ")}<BR>"
+    <> "🔥 Fastest: part 1 - #{Enum.at(fast, 0)} ⭐ part 2 - #{Enum.at(fast, 1)} 🤩<BR>"
+    <> "❄️ Slowest: part 1 - #{Enum.at(slow, 0)} ⭐ part 2 - #{Enum.at(slow, 1)} 🤩<BR>"
     <> "</BLOCKQUOTE>"
   end
 
