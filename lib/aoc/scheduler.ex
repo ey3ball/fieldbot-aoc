@@ -4,7 +4,7 @@ defmodule Aoc.Scheduler do
 
   def aocbot_stats() do
     {_, today} = Aoc.Rank.Client.today()
-    aocbot_today(today)
+    aocbot_stats(today)
   end
 
   def aocbot_stats(0) do
