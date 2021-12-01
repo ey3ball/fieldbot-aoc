@@ -84,7 +84,7 @@ defmodule Aoc.IrcBot.Aoc do
 
     complete = cond do
       stats["global_stats"]["complete"] == :true ->
-        "<BR>🌍 leaderboard is complete for the day !"
+        "<BR>🌍 Global leaderboard is complete for the day !<BR>100 people have solved the two challenges already."
       :true ->
         ""
     end
