@@ -37,6 +37,21 @@ defmodule Aoc.IrcBot.Aoc do
     {:noreply, state}
   end
 
+  def handle_cast(:solutions, state) do
+    date = DateTime.now!("EST")
+
+    Irc.msg(
+        state[:client], :privmsg, state[:channel],
+        @bot_prefix <> "Day #{date.day} 🎁 Solution discussion thread"
+        <> "<BLOCKQUOTE>Be nice and don't open until part 2 completion"
+        <> "<BR>⚠️ <STRONG>Spoilers Ahead</STRONG>"
+        <> "</BLOCKQUOTE>"
+    )
+
+    {:noreply, state}
+  end
+
+
   def handle_cast(:today, state) do
     today = Date.utc_today()
 

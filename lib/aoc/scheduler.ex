@@ -15,6 +15,19 @@ defmodule Aoc.Scheduler do
     GenServer.cast(Process.whereis(:aocbot), :stats)
   end
 
+  def aocbot_solutions() do
+    {_, today} = Aoc.Rank.Client.today()
+    aocbot_solutions(today)
+  end
+
+  def aocbot_solutions(0) do
+    :ok
+  end
+
+  def aocbot_solutions(_) do
+    GenServer.cast(Process.whereis(:aocbot), :solutions)
+  end
+
   def aocbot_today() do
     {_, today} = Aoc.Rank.Client.today()
     aocbot_today(today)
