@@ -99,7 +99,7 @@ defmodule Aoc.IrcBot.Aoc do
 
     complete = cond do
       stats["global_stats"]["complete"] == :true ->
-        "<BR>🌍 Global leaderboard is complete for the day !<BR>100 people have solved the two challenges already."
+        "<BR>🌍 Global leaderboard is complete for the day ! 100 people have solved the two challenges already."
       :true ->
         ""
     end
@@ -225,7 +225,8 @@ defmodule Aoc.IrcBot.Commands do
         updates = Formatter.ranking("#{day}", diff)
         Irc.msg(
           state[:client], :privmsg, state[:channel],
-          @bot_prefix <> "Today's rankings" <> updates
+          @bot_prefix <> "Today's leaders ! Who woke up first ? ☕"
+          <> updates 
         )
     end
     :ok
@@ -250,8 +251,8 @@ defmodule Aoc.IrcBot.Commands do
     solve_stats = Aoc.Rank.Stats.by_time(leaderboard, day)
     Irc.msg(
       state[:client], :privmsg, state[:channel],
-      @bot_prefix <> "Fastest 🦌 in the pack (best part 2 times for #{year}-#{day})"
-      <> Formatter.part2_times(solve_stats |> Enum.take(10))
+      @bot_prefix <> "Fastest 🦌 in the pack ? (best part 2 solve times for #{year}-#{day})"
+      <> Formatter.part2_times(solve_stats)
     )
     :ok
   end
@@ -291,12 +292,20 @@ defmodule Aoc.IrcBot.Formatter do
   def updates(diff) do
     updates = diff
     |> Enum.map(&(user_update(&1)))
+    |> Enum.take(10)
     "🚨 " <> Enum.join(updates, "<BR>🚨 ")
   end
 
   def ranking(day, diff) do
     updates = diff
-      |> Enum.sort(&(&1[:new_points] >= &2[:new_points]))
+      |> Enum.sort(&(
+        &1[:new_points] > &2[:new_points]
+        || (
+          &1[:new_points] == &2[:new_points]
+          && &1[:p2_time] <= &2[:p2_time]
+        )
+      ))
+      |> Enum.take(5)
       |> beautify_rank()
       |> Enum.map(fn {user, i} ->
         "#{i}<strong>#{user.name}</strong> #{user.new_points} pts #{day_badge(day, user)} #{user.p2_time}"
@@ -329,8 +338,10 @@ defmodule Aoc.IrcBot.Formatter do
 
   def reference_times(slow, fast) do
     "<BLOCKQUOTE>"
-    <> "🔥 Fastest: part 1 - #{Enum.at(fast, 0)} ⭐ part 2 - #{Enum.at(fast, 1)} 🤩<BR>"
-    <> "❄️ Slowest: part 1 - #{Enum.at(slow, 0)} ⭐ part 2 - #{Enum.at(slow, 1)} 🤩<BR>"
+    <> "🔥 Fastest: part 1 - #{Enum.at(fast, 0)} "
+    <>            "⭐ part 2 - #{Enum.at(fast, 1)} 🤩<BR>"
+    <> "❄️ Slowest: part 1 - #{Enum.at(slow, 0)} "
+    <>            "⭐ part 2 - #{Enum.at(slow, 1)} 🤩<BR>"
     <> "</BLOCKQUOTE>"
   end
 
