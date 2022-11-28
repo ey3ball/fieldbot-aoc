@@ -1,30 +1,34 @@
 #yaml-language-server: $schema=https://raw.githubusercontent.com/docker/compose/master/compose/config/compose_spec.json
 version: '3.8'
 services:
-  aoc:
-    entrypoint: /bin/bash -i
-    working_dir: /app
-    build: .
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./:/app
-  ircd:
-    image: ey3ball/matrix-ircd
-    restart: always
-    command: ["--url", "$MATRIX_URL", "-b", "0.0.0.0:5999" ]
+  #aoc:
+  #  entrypoint: /bin/bash -i
+  #  working_dir: /app
+  #  build: .
+  #  stdin_open: true
+  #  tty: true
+  #  volumes:
+  #    - ./:/app
+  #ircd:
+  #  image: ey3ball/matrix-ircd
+  #  restart: always
+  #  command: ["--url", "$MATRIX_URL", "-b", "0.0.0.0:5999" ]
   mongo:
-    image: mongo
+    image: docker.io/mongo:4.4
     restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: toor
       MONGO_INITDB_DATABASE: aoc
+    ports:
+      - 27017:27017
     volumes:
       - ./mongo-data:/data/db
   mongo-express:
-    image: mongo-express
+    image: docker.io/mongo-express
     restart: always
+    ports:
+      - 8081:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: aoc
       ME_CONFIG_MONGODB_ADMINPASSWORD: root
