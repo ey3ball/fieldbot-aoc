@@ -9,10 +9,3 @@ config :aoc, Aoc.Scheduler,
     {"1 5 * * *", &Aoc.Scheduler.aocbot_today/0},
     {"5,20,35,50 * * *", &Aoc.Scheduler.aocbot_heartbeat/0}
   ]
-
-config :aoc, Aoc.Client,
-  cookie: "AocWebsiteCookie"
-
-config :aoc, Aoc.Server,
-  username: "matrix-username",
-  password: "matrix-password"

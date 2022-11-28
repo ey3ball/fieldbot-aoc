@@ -19,7 +19,7 @@ defmodule Aoc.Supervisor do
         id: :mongo,
         start: {
           Mongo, :start_link,
-          [[name: :mongo, url: "mongodb://aoc:root@127.0.0.1:27017/aoc"]]
+          [[name: :mongo, url: Aoc.Cfg.mongod()]]
         }
       },
       Aoc.Scheduler,

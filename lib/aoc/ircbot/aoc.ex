@@ -3,7 +3,6 @@ defmodule Aoc.IrcBot.Aoc do
 
   alias Aoc.Cache.Client, as: Cache
   alias Aoc.IrcBot.Formatter, as: Formatter
-  alias ExIRC.Client, as: Irc
 
   @five_seconds 5000
   @bot_prefix "🤖 "
@@ -13,20 +12,31 @@ defmodule Aoc.IrcBot.Aoc do
     start_link([])
   end
 
-  def start_link(client) do
-    GenServer.start_link(__MODULE__, client, name: :aocbot)
+  def start_link([]) do
+    GenServer.start_link(__MODULE__, [], name: :aocbot)
   end
 
-  def init(client) do
-    Irc.add_handler(client, self())
-    Process.send_after(self(), :started, @five_seconds)
+  def init(_args) do
+    IO.puts Aoc.Cfg.matrix_url()
+    IO.puts Aoc.Cfg.matrix_userid()
+    IO.puts Aoc.Cfg.matrix_token()
+    {:ok, pid} = Polyjuice.Client.start_link(
+        Aoc.Cfg.matrix_url(),
+        access_token: Aoc.Cfg.matrix_token(),
+        user_id: Aoc.Cfg.matrix_userid(),
+        handler: self(),
+        storage: Polyjuice.Client.Storage.Ets.open()
+    )
+
+    IO.puts IO.ANSI.red() <> "Aoc.IrcBot Starting - client #{inspect pid}"
+    client = Polyjuice.Client.get_client(pid)
+
     {:ok, %{
       :client => client,
       :init => false,
-      :channel => Application.fetch_env!(:aoc, Aoc.IrcBot)
-        |> Keyword.get(:channel),
-      :spam => Application.fetch_env!(:aoc, Aoc.IrcBot)
-        |> Keyword.get(:spam)
+      :room => nil,
+      :channel => Aoc.Cfg.room_main(),
+      :spam => Aoc.Cfg.room_debug()
     }}
   end
 
@@ -40,8 +50,8 @@ defmodule Aoc.IrcBot.Aoc do
   def handle_cast(:solutions, state) do
     date = DateTime.now!("EST")
 
-    Irc.msg(
-        state[:client], :privmsg, state[:channel],
+    Aoc.IrcBot.Commands.send_message(
+        state,
         @bot_prefix <> "Day #{date.day} 🎁 Solution discussion thread"
         <> "<BLOCKQUOTE>Be nice and don't open until part 2 completion"
         <> "<BR>⚠️ <STRONG>Spoilers Ahead</STRONG>"
@@ -58,8 +68,8 @@ defmodule Aoc.IrcBot.Aoc do
     problem = Aoc.Rank.Client.problem(today.year, today.day)
     title = Aoc.Rank.Client.problem_title(problem)
 
-    Irc.msg(
-        state[:client], :privmsg, state[:channel],
+    Aoc.IrcBot.Commands.send_message(
+        state,
         @bot_prefix <> "Wake up early 🐦🐦🐦 ! <BLOCKQUOTE>"
         <> "🎅  " <> "Today's problem :"
         <> "<BR>🎅 <STRONG>" <> title <>"</STRONG>"
@@ -83,10 +93,7 @@ defmodule Aoc.IrcBot.Aoc do
         :ok
       true ->
         updates = Formatter.updates(diff)
-        Irc.msg(
-          state[:client], :privmsg, state[:channel],
-          updates
-        )
+        Aoc.IrcBot.Commands.send_message(state, updates)
     end
 
     {:noreply, state}
@@ -104,8 +111,8 @@ defmodule Aoc.IrcBot.Aoc do
         ""
     end
 
-    Irc.msg(
-        state[:client], :privmsg, state[:channel],
+    Aoc.IrcBot.Commands.send_message(
+        state,
         @bot_prefix <> "Global leaderboard update !"
         <> Formatter.reference_times(slowest, fastest)
         <> complete
@@ -114,26 +121,38 @@ defmodule Aoc.IrcBot.Aoc do
     {:noreply, state}
   end
 
-
-  def handle_info(:started, state) do
-    {:noreply, %{state | :init => true}}
+  def handle_info({:polyjuice_client, :initial_sync_completed}, state) do
+    IO.puts IO.ANSI.red() <> "Matrix client ready !!"
+    {:ok, {room_id, _}} = Polyjuice.Client.Room.get_alias(state[:client], "#testroom:ey3ball.net")
+    IO.puts "Room ? #{inspect room_id}"
+    {:noreply, %{state | :init => true, :room => room_id}}
   end
 
   def handle_info(
-      {:received, message, sender, channel},
-      state = %{:init => true, :channel => channel}
+      {:polyjuice_client, :message, {channel, %{"content" => %{"msgtype" => "m.text"} = message}} = data},
+      state = %{:init => true} #, :channel => channel}
   ) do
-    from = sender.nick
+    from = message["sender"]
+    message = message["body"]
 
     IO.puts "#{from} sent a message to #{channel}: #{message}"
+
     cond do
       String.starts_with?(message, "!crashtest") ->
         1 = 0
       String.starts_with?(message, "!formattest") ->
-        Irc.msg(
-            state[:client], :privmsg, state[:channel],
+        Aoc.IrcBot.Commands.send_message(state,
             @bot_prefix <> "Test <strong>*fsdfsfd*</strong>"
             <> "<pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
+        )
+      String.starts_with?(message, "!selftest") ->
+        problem = Aoc.Rank.Client.problem("2021", "5")
+        leaderboard = Aoc.Rank.Client.leaderboard("2021")
+        IO.inspect leaderboard
+        Aoc.IrcBot.Commands.send_message(state,
+          @bot_prefix <> "Test API client<BR>"
+          <> "Problem 2021/05 " <> Aoc.Rank.Client.problem_title(problem) <> "<BR>"
+          <> "Leaderboard 2021" <> "<BR>" <> Aoc.IrcBot.Formatter.leaderboard(leaderboard)
         )
       String.starts_with?(message, "!updatetest") ->
         GenServer.cast(Process.whereis(:aocbot), :heartbeat)
@@ -143,12 +162,13 @@ defmodule Aoc.IrcBot.Aoc do
         Aoc.IrcBot.Commands.top5(state, "2019")
       String.starts_with?(message, "!2020") ->
         Aoc.IrcBot.Commands.top5(state, "2020")
+      String.starts_with?(message, "!2021") ->
+        Aoc.IrcBot.Commands.top5(state, "2021")
       String.starts_with?(message, "!daily") ->
         {_, today} = Aoc.Rank.Client.today()
         case today do
           0 ->
-            Irc.msg(
-              state[:client], :privmsg, state[:channel],
+            Aoc.IrcBot.Commands.send_message(state,
               @bot_prefix <> "No AoC today :( "
               <> "Come back during advent season 🧦 !"
             )
@@ -175,8 +195,8 @@ defmodule Aoc.IrcBot.Aoc do
             Aoc.IrcBot.Commands.global(state, year, day)
         end
       String.starts_with?(message, "!help") ->
-        Irc.msg(
-          state[:client], :privmsg, state[:channel],
+        Aoc.IrcBot.Commands.send_message(
+          state,
           @bot_prefix <> "I live to serve<BR>"
           <> @bot_prefix <> "<strong>!help</strong>: read this<BR>"
           <> @bot_prefix <> "<strong>![year]</strong>: show top5<BR>"
@@ -185,7 +205,7 @@ defmodule Aoc.IrcBot.Aoc do
           <> @bot_prefix <> "<strong>!global [year] [day]</strong>: global leaderboard statistics<BR>"
         )
       String.starts_with?(message, "!") ->
-        Irc.msg(state[:client], :privmsg, channel,
+        Aoc.IrcBot.Commands.send_message(state,
           @bot_prefix <> " Come again ?"
         )
       true ->
@@ -210,23 +230,34 @@ end
 defmodule Aoc.IrcBot.Commands do
   alias Aoc.IrcBot.Formatter, as: Formatter
   alias Aoc.Cache.Client, as: Cache
-  alias ExIRC.Client, as: Irc
+  alias Polyjuice.Client, as: Matrix
   @bot_prefix "🤖 "
+
+  def send_message(state, message) do
+    send_message(state, message, state[:room])
+  end
+
+  def send_message(state, message, room) do
+        Matrix.Room.send_message(
+            state[:client], room,
+            {Floki.text(message), message}
+        )
+  end
 
   def daily(state) do
     {day, diff} = Aoc.Rank.Announces.daily_stats()
     cond do
       diff == [] ->
-        Irc.msg(
-          state[:client], :privmsg, state[:channel],
+        send_message(
+          state,
           @bot_prefix <> "No ⭐found recently :("
         )
       true ->
         updates = Formatter.ranking("#{day}", diff)
-        Irc.msg(
-          state[:client], :privmsg, state[:channel],
+        send_message(
+          state,
           @bot_prefix <> "Today's leaders ! Who woke up first ? ☕"
-          <> updates 
+          <> updates
         )
     end
     :ok
@@ -234,8 +265,8 @@ defmodule Aoc.IrcBot.Commands do
 
   def top5(state, year) do
     leaderboard = Cache.last(year)
-    Irc.msg(
-        state[:client], :privmsg, state[:channel],
+    send_message(
+        state,
         @bot_prefix <> Formatter.leaderboard(leaderboard)
     )
   end
@@ -246,11 +277,11 @@ defmodule Aoc.IrcBot.Commands do
     #  12,
     #  elem(Integer.parse(day) + 1, 0)
     #)
-    #time = DateTime.new!(date, ~T[00:00:00.000], "EST") 
+    #time = DateTime.new!(date, ~T[00:00:00.000], "EST")
     leaderboard = Aoc.Cache.Client.last(year)
     solve_stats = Aoc.Rank.Stats.by_time(leaderboard, day)
-    Irc.msg(
-      state[:client], :privmsg, state[:channel],
+    send_message(
+      state,
       @bot_prefix <> "Fastest 🦌 in the pack ? (best part 2 solve times for #{year}-#{day})"
       <> Formatter.part2_times(solve_stats)
     )
@@ -260,7 +291,7 @@ defmodule Aoc.IrcBot.Commands do
   def global(state, year, day) do
     global = Aoc.Rank.Client.global_scores(year, day)
     stats = Aoc.Rank.Client.global_stats(global)
-    Irc.msg(state[:client], :privmsg, state[:channel],
+    send_message(state,
       @bot_prefix <> Formatter.global(stats, year, day)
     )
     :ok
