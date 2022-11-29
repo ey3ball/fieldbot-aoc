@@ -39,19 +39,22 @@ defmodule Aoc.Scheduler do
 
   def aocbot_today(_) do
     date = Date.utc_today()
+
     Mongo.insert_one(
-      :mongo, "daystats",
+      :mongo,
+      "daystats",
       %{
         "day" => date.day,
         "year" => date.year,
         "global_stats" => %{
-          "complete" => :false,
+          "complete" => false,
           "fastest" => [],
           "slowest" => []
         },
         "finishers" => []
       }
     )
+
     GenServer.cast(Process.whereis(:aocbot), :today)
   end
 
@@ -63,34 +66,38 @@ defmodule Aoc.Scheduler do
 
     # Update leaderboard cache
     leaderboard = Aoc.Rank.Client.leaderboard("#{year}")
+
     Mongo.insert_one(
-      :mongo, "leaderboard",
+      :mongo,
+      "leaderboard",
       Map.put(leaderboard, "scrape_time", iso_time)
     )
 
     # If necessary update global stats
     if scrape_time.hour >= @start_hour do
       daydata = Aoc.Cache.Client.today()
-      IO.inspect daydata
-      if daydata["global_stats"]["complete"] == :false do
+      IO.inspect(daydata)
+
+      if daydata["global_stats"]["complete"] == false do
         global = Aoc.Rank.Client.global_scores(date.year, date.day)
         {slowest, fastest} = Aoc.Rank.Client.global_stats(global)
-        complete = ((length(slowest) + length(fastest)) == 4)
-        IO.inspect complete
-        IO.inspect slowest
+        complete = length(slowest) + length(fastest) == 4
+        IO.inspect(complete)
+        IO.inspect(slowest)
 
         new_stats = %{
           "global_stats" => %{
-              "complete" => complete,
-              "fastest" => fastest,
-              "slowest" => slowest,
+            "complete" => complete,
+            "fastest" => fastest,
+            "slowest" => slowest
           }
         }
 
         Mongo.update_one!(
-          :mongo, "daystats",
-          %{ "_id" => daydata["_id"] },
-          %{ "$set": new_stats }
+          :mongo,
+          "daystats",
+          %{"_id" => daydata["_id"]},
+          %{"$set": new_stats}
         )
 
         if complete or new_stats != daydata["global_stats"] do
@@ -105,13 +112,18 @@ defmodule Aoc.Scheduler do
   def aocbot_updates() do
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
     leaderboard = Aoc.Rank.Client.leaderboard("2018")
+
     Mongo.insert_one(
-      :mongo, "leaderboard",
+      :mongo,
+      "leaderboard",
       Map.put(leaderboard, "scrape_time", scrape_time)
     )
+
     leaderboard = Aoc.Rank.Client.leaderboard("2019")
+
     Mongo.insert_one(
-      :mongo, "leaderboard",
+      :mongo,
+      "leaderboard",
       Map.put(leaderboard, "scrape_time", scrape_time)
     )
   end

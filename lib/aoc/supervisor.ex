@@ -18,13 +18,15 @@ defmodule Aoc.Supervisor do
       %{
         id: :mongo,
         start: {
-          Mongo, :start_link,
+          Mongo,
+          :start_link,
           [[name: :mongo, url: Aoc.Cfg.mongod()]]
         }
       },
       Aoc.Scheduler,
-      Aoc.Server,
+      Aoc.Server
     ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

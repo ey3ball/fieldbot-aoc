@@ -1,21 +1,28 @@
 defmodule Aoc.Cfg do
   def check() do
-    true = Enum.all?(
-      Application.fetch_env!(:aoc, Aoc.Server)
-      |> Keyword.values()
-    )
-    true = Enum.all?(
-      Application.fetch_env!(:aoc, Aoc.Mongod)
-      |> Keyword.values()
-    )
-    true = Enum.all?(
-      Application.fetch_env!(:aoc, Aoc.Client)
-      |> Keyword.values()
-    )
-    true = Enum.all?(
-      Application.fetch_env!(:aoc, Aoc.Rooms)
-      |> Keyword.values()
-    )
+    true =
+      Enum.all?(
+        Application.fetch_env!(:aoc, Aoc.Server)
+        |> Keyword.values()
+      )
+
+    true =
+      Enum.all?(
+        Application.fetch_env!(:aoc, Aoc.Mongod)
+        |> Keyword.values()
+      )
+
+    true =
+      Enum.all?(
+        Application.fetch_env!(:aoc, Aoc.Client)
+        |> Keyword.values()
+      )
+
+    true =
+      Enum.all?(
+        Application.fetch_env!(:aoc, Aoc.Rooms)
+        |> Keyword.values()
+      )
   end
 
   def matrix_url() do
@@ -58,7 +65,6 @@ defmodule Aoc.Cfg do
     password = env |> Keyword.get(:password)
     database = env |> Keyword.get(:database)
     "mongodb://#{username}:#{password}@#{host}:#{port}/#{database}"
-
   end
 end
 
@@ -74,18 +80,21 @@ defmodule Aoc.Server do
   def init(state) do
     Aoc.Cfg.check()
 
-    IO.puts IO.ANSI.red() <> "Aoc.Server Starting"
+    IO.puts(IO.ANSI.red() <> "Aoc.Server Starting")
 
     children = [
       Aoc.IrcBot.Aoc
     ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-    :ok
+  :ok
+
   def terminate(_state) do
-    IO.puts(IO.ANSI.green()
-      <> "Aoc.Server Terminated" <> IO.ANSI.reset()
+    IO.puts(
+      IO.ANSI.green() <>
+        "Aoc.Server Terminated" <> IO.ANSI.reset()
     )
   end
 end
