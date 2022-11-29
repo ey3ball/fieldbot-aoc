@@ -35,6 +35,7 @@ defmodule Aoc.IrcBot.Aoc do
       :client => client,
       :init => false,
       :room => nil,
+      :room_spam => nil,
       :channel => Aoc.Cfg.room_main(),
       :spam => Aoc.Cfg.room_debug()
     }}
@@ -80,12 +81,12 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:heartbeat, state) do
-    #scrape_time = DateTime.to_iso8601(DateTime.utc_now())
-    #Irc.msg(
-    #    state[:client], :privmsg, state[:spam],
-    #    @bot_prefix <> "Refreshed leaderboard stats !"
-    #    <> scrape_time
-    #)
+    scrape_time = DateTime.to_iso8601(DateTime.utc_now())
+    Aoc.IrcBot.Commands.send_message(
+        state,
+        @bot_prefix <> "Refreshed leaderboard stats !" <> scrape_time,
+        state[:room_spam]
+    )
 
     diff = Aoc.Rank.Announces.find_updates()
     cond do
@@ -123,9 +124,11 @@ defmodule Aoc.IrcBot.Aoc do
 
   def handle_info({:polyjuice_client, :initial_sync_completed}, state) do
     IO.puts IO.ANSI.red() <> "Matrix client ready !!"
-    {:ok, {room_id, _}} = Polyjuice.Client.Room.get_alias(state[:client], "#testroom:ey3ball.net")
+    {:ok, {room_id, _}} = Polyjuice.Client.Room.get_alias(state[:client], Aoc.Cfg.room_main())
+    {:ok, {debug_room_id, _}} = Polyjuice.Client.Room.get_alias(state[:client], Aoc.Cfg.room_debug())
     IO.puts "Room ? #{inspect room_id}"
-    {:noreply, %{state | :init => true, :room => room_id}}
+    IO.puts "Debug Room ? #{inspect debug_room_id}"
+    {:noreply, %{state | :init => true, :room => room_id, :room_spam => debug_room_id}}
   end
 
   def handle_info(
