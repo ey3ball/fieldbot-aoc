@@ -130,7 +130,7 @@ defmodule Aoc.IrcBot.Aoc do
 
   def handle_info(
       {:polyjuice_client, :message, {channel, %{"content" => %{"msgtype" => "m.text"} = message}} = data},
-      state = %{:init => true} #, :channel => channel}
+      state = %{:init => true, :room => channel} #, :channel => channel}
   ) do
     from = message["sender"]
     message = message["body"]
