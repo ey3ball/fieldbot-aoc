@@ -23,7 +23,6 @@ defmodule Aoc.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:exirc, "~> 2.0.0"},
       {:hackney, "~> 1.16.0"},
       {:jason, "~> 1.2"},
       {:quantum, "~> 3.0"},
