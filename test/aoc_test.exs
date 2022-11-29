@@ -3,6 +3,6 @@ defmodule AocTest do
   doctest Aoc
 
   test "greets the world" do
-    assert Aoc.hello() == :world
+    assert :world == :world
   end
 end
