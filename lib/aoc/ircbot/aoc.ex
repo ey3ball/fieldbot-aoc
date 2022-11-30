@@ -50,6 +50,11 @@ defmodule Aoc.IrcBot.Aoc do
   def handle_cast(:solutions, state) do
     date = DateTime.now!("EST")
 
+    Aoc.IrcBot.Commands.send_debug(
+      state,
+      "🛠️" <> " Solution event received"
+    )
+
     Aoc.IrcBot.Commands.send_message(
       state,
       @bot_prefix <>
@@ -63,6 +68,11 @@ defmodule Aoc.IrcBot.Aoc do
   end
 
   def handle_cast(:today, state) do
+    Aoc.IrcBot.Commands.send_debug(
+      state,
+      "🛠️" <> " Day event received"
+    )
+
     today = Date.utc_today()
 
     problem = Aoc.Rank.Client.problem(today.year, today.day)
@@ -86,10 +96,9 @@ defmodule Aoc.IrcBot.Aoc do
   def handle_cast(:heartbeat, state) do
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
 
-    Aoc.IrcBot.Commands.send_message(
+    Aoc.IrcBot.Commands.send_debug(
       state,
-      @bot_prefix <> "Refreshed leaderboard stats !" <> scrape_time,
-      state[:room_spam]
+      @bot_prefix <> "Scrape event received !" <> scrape_time
     )
 
     diff = Aoc.Rank.Announces.find_updates()
@@ -103,10 +112,20 @@ defmodule Aoc.IrcBot.Aoc do
         Aoc.IrcBot.Commands.send_message(state, updates)
     end
 
+    Aoc.IrcBot.Commands.send_debug(
+      state,
+      @bot_prefix <> "Scrape complete"
+    )
+
     {:noreply, state}
   end
 
   def handle_cast(:global_update, state) do
+    Aoc.IrcBot.Commands.send_debug(
+      state,
+      "🛠️" <> " Global update event received"
+    )
+
     stats = Aoc.Cache.Client.today()
     fastest = stats["global_stats"]["fastest"]
     slowest = stats["global_stats"]["slowest"]
@@ -140,7 +159,14 @@ defmodule Aoc.IrcBot.Aoc do
 
     IO.puts("Room ? #{inspect(room_id)}")
     IO.puts("Debug Room ? #{inspect(debug_room_id)}")
-    {:noreply, %{state | :init => true, :room => room_id, :room_spam => debug_room_id}}
+    new_state = %{state | :init => true, :room => room_id, :room_spam => debug_room_id}
+
+    Aoc.IrcBot.Commands.send_debug(
+      new_state,
+      @bot_prefix <> "👋 Bot Connected Bridge"
+    )
+
+    {:noreply, new_state}
   end
 
   def handle_info(
@@ -286,6 +312,16 @@ defmodule Aoc.IrcBot.Commands do
   alias Aoc.Cache.Client, as: Cache
   alias Polyjuice.Client, as: Matrix
   @bot_prefix "🤖 "
+
+  def send_debug(state, message) do
+    if Aoc.Cfg.monitor?() do
+      Aoc.IrcBot.Commands.send_message(
+        state,
+        message,
+        state[:room_spam]
+      )
+    end
+  end
 
   def send_message(state, message) do
     send_message(state, message, state[:room])

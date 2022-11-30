@@ -20,4 +20,5 @@ config :aoc, Aoc.Client,
 
 config :aoc, Aoc.Rooms,
   main: System.get_env("FIELDBOT_ROOM_MAIN", nil),
-  spam: System.get_env("FIELDBOT_ROOM_DEBUG", nil)
+  spam: System.get_env("FIELDBOT_ROOM_DEBUG", nil),
+  monitor: System.get_env("FIELDBOT_ROOM_MONITOR", "0")

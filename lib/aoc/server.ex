@@ -57,6 +57,10 @@ defmodule Aoc.Cfg do
     Application.fetch_env!(:aoc, Aoc.Rooms) |> Keyword.get(:spam)
   end
 
+  def monitor?() do
+    Application.fetch_env!(:aoc, Aoc.Rooms) |> Keyword.get(:monitor) == "1"
+  end
+
   def mongod() do
     env = Application.fetch_env!(:aoc, Aoc.Mongod)
     host = env |> Keyword.get(:host)
