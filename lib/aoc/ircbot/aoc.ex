@@ -58,8 +58,8 @@ defmodule Aoc.IrcBot.Aoc do
     Aoc.IrcBot.Commands.send_message(
       state,
       @bot_prefix <>
-        "Day #{date.day} 🎁 Solution discussion thread" <>
-        "<BLOCKQUOTE>Be nice and don't open until part 2 completion" <>
+        "Day #{date.day} **🎁 Solution discussion thread**" <>
+        "<BR><BLOCKQUOTE>Be nice and don't open until part 2 completion" <>
         "<BR>⚠️ <STRONG>Spoilers Ahead</STRONG>" <>
         "</BLOCKQUOTE>"
     )
@@ -81,7 +81,7 @@ defmodule Aoc.IrcBot.Aoc do
     Aoc.IrcBot.Commands.send_message(
       state,
       @bot_prefix <>
-        "Wake up early 🐦🐦🐦 ! <BLOCKQUOTE>" <>
+        "Wake up early 🐦🐦🐦 ! <BR><BLOCKQUOTE>" <>
         "🎅  " <>
         "Today's problem :" <>
         "<BR>🎅 <STRONG>" <>
@@ -133,7 +133,7 @@ defmodule Aoc.IrcBot.Aoc do
     complete =
       cond do
         stats["global_stats"]["complete"] == true ->
-          "<BR>🌍 Global leaderboard is complete for the day ! 100 people have solved the two challenges already."
+          "<BR>🌍 Global leaderboard is complete for the day ! <BR> 100 people have solved the two challenges already."
 
         true ->
           ""
@@ -143,7 +143,7 @@ defmodule Aoc.IrcBot.Aoc do
       state,
       @bot_prefix <>
         "Global leaderboard update !" <>
-        Formatter.reference_times(slowest, fastest) <>
+        "<BR>" <> Formatter.reference_times(slowest, fastest) <>
         complete
     )
 
@@ -188,7 +188,7 @@ defmodule Aoc.IrcBot.Aoc do
         Aoc.IrcBot.Commands.send_message(
           state,
           @bot_prefix <>
-            "Test <strong>*fsdfsfd*</strong>" <>
+            "Test <strong>*fsdfsfd*</strong><br>" <>
             "<pre>fsdf</pre><table><td>dsfsdf</td><td>dsfsdf</td></table>"
         )
 
@@ -351,7 +351,7 @@ defmodule Aoc.IrcBot.Commands do
         send_message(
           state,
           @bot_prefix <>
-            "Today's leaders ! Who woke up first ? ☕" <>
+            "Today's leaders ! Who woke up first ? ☕" <> "<BR>" <>
             updates
         )
     end
@@ -382,7 +382,7 @@ defmodule Aoc.IrcBot.Commands do
       state,
       @bot_prefix <>
         "Fastest 🦌 in the pack ? (best part 2 solve times for #{year}-#{day})" <>
-        Formatter.part2_times(solve_stats)
+        "<BR>" <> Formatter.part2_times(solve_stats)
     )
 
     :ok
