@@ -96,10 +96,10 @@ defmodule Aoc.IrcBot.Aoc do
   def handle_cast(:heartbeat, state) do
     scrape_time = DateTime.to_iso8601(DateTime.utc_now())
 
-    Aoc.IrcBot.Commands.send_debug(
-      state,
-      @bot_prefix <> "Scrape event received !" <> scrape_time
-    )
+    #Aoc.IrcBot.Commands.send_debug(
+    #  state,
+    #  @bot_prefix <> "Scrape event received !" <> scrape_time
+    #)
 
     diff = Aoc.Rank.Announces.find_updates()
 
@@ -112,10 +112,10 @@ defmodule Aoc.IrcBot.Aoc do
         Aoc.IrcBot.Commands.send_message(state, updates)
     end
 
-    Aoc.IrcBot.Commands.send_debug(
-      state,
-      @bot_prefix <> "Scrape complete"
-    )
+    #Aoc.IrcBot.Commands.send_debug(
+    #  state,
+    #  @bot_prefix <> "Scrape complete"
+    #)
 
     {:noreply, state}
   end
