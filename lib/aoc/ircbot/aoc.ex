@@ -331,7 +331,7 @@ defmodule Aoc.IrcBot.Commands do
     Matrix.Room.send_message(
       state[:client],
       room,
-      {Floki.text(message), message}
+      {Floki.text(Floki.parse_document!(message)), message}
     )
   end
 
